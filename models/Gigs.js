@@ -25,4 +25,5 @@ const gigSchema = new mongoose.Schema({
 
 });
 
-export default Gigs = mongoose.models.Gigs || mongoose.model("Gigs", gigSchema);
+const Gigs = mongoose.models.Gigs || mongoose.model("Gigs", gigSchema);
+export default Gigs;

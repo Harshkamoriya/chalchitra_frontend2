@@ -1,6 +1,7 @@
 import Gigs from "@/models/Gigs";
 import { getServerSession } from "next-auth"
-import { connectToDB } from "@/lib/db";   
+import { connectToDB } from "@/lib/db"; 
+import { NextResponse } from "next/server";  
 
 export async function PUT(req, { params }) {
   try {
@@ -12,7 +13,7 @@ export async function PUT(req, { params }) {
         status: 401,
         success: false,
       });
-    const { gigId } = params.id;
+const gigId = params.id;
     const data = await req.json();
     console.log("Gig ID:", gigId);
     if (!gigId)
@@ -56,7 +57,7 @@ export async function PUT(req, { params }) {
 
 export async function GET(req , params) {
   try {
-    await connectDB();
+    await connectToDB();
     const session = await getServerSession();
     if (!session?.user?.email)
       return NextResponse.json({
@@ -64,7 +65,7 @@ export async function GET(req , params) {
         status: 401,
         success: false,
       });
-    const gig = await Gig.findById(params.id);
+    const gig = await Gigs.findById(params.id);
     if (!gig)
       return NextResponse.json({ error: "Gig not found" }, { status: 404 });
     return NextResponse.json({ gig, status: 200, success: true });
