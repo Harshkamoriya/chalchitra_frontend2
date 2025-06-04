@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Pacifico } from "next/font/google"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,6 +30,11 @@ const Navbar = () => {
   const [onClose , setOnClose] = useState(() => () => setShowAuthModal(false))
   const [authMode, setAuthMode] = useState("signin")
   const { data: session, status } = useSession()
+
+  useEffect(()=>{
+    // console.log(data , "session data")
+    console.log("session  " ,session)
+  })
 
   // Mock notification data - replace with real data
   const mockNotifications = 3

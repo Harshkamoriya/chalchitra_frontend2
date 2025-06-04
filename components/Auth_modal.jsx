@@ -7,21 +7,19 @@ import { Button } from './ui/button';
 import { signIn } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Pacifico } from 'next/font/google';
-
+import Loader from './Loader'; // ✅ import Loader
 
 const pacifico = Pacifico({
   subsets: ["latin"],
-  weight: "400", // or other available weights
+  weight: "400",
 });
 
-
 const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
-  const [authMode, setAuthMode] = useState(defaultMode || 'login');
+  const [authMode, setAuthMode] = useState(defaultMode || 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userData, setUserData] = useState({});
-  
-
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false); // ✅ loader state
 
   if (!isOpen) return null;
 
@@ -29,6 +27,7 @@ const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
     const { name, value } = e.target;
     if (name === 'email') setEmail(value);
     else if (name === 'password') setPassword(value);
+    else if (name === 'name') setName(value);
   };
 
   const validateForm = () => {
@@ -47,116 +46,110 @@ const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
     return true;
   };
 
- const handleonsubmit = async (e) => {
-  e.preventDefault();
+  const handleonsubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  const isValid = validateForm(email, password);
-  if (!isValid) return;
+    setLoading(true); // ✅ start loading
 
-  if (authMode === "signup") {
     try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password, role }), // add name and role as needed
-      });
+      if (authMode === "signup") {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
+        if (!res.ok) {
+          toast.error(data.error || "Signup failed");
+          setLoading(false);
+          return;
+        }
 
-      if (!res.ok) {
-        toast.error(data.error || "Signup failed");
-        return;
-      }
+        toast.success("Signup successful. Logging you in...");
+        const result = await signIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        });
 
-      toast.success("Signup successful. Logging you in...");
+        if (result?.ok || result?.status === 200) {
+          toast.success("Login successful");
+          onClose?.();
+        } else {
+          toast.error("Auto-login failed after signup");
+        }
 
-      // Automatically log in after signup
-      const loginRes = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
-      });
-
-      if (loginRes.ok) {
-        toast.success("Login successful");
-        // Close modal or navigate
       } else {
-        toast.error("Auto-login failed after signup");
-      }
+        const result = await signIn("credentials", {
+          redirect: false,
+          email,
+          password,
+        });
 
+        if (result?.ok || result?.status === 200) {
+          toast.success("Login successful");
+          onClose?.();
+        } else {
+          toast.error("Invalid email or password");
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong");
+    } finally {
+      setLoading(false); // ✅ stop loading
     }
+  };
 
-  } else {
-    // Login flow using credentials provider
-    const loginRes = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-
-    if (loginRes.ok) {
-      toast.success("Login successful");
-      // Close modal or navigate
-    } else {
-      toast.error("Invalid email or password");
+  const handleSignin = async (e, provider) => {
+    e.preventDefault();
+    setLoading(true); // ✅ start loading
+    try {
+await signIn(provider, { callbackUrl: `/?signin=${provider}` });
+    } catch (error) {
+      console.error(error);
+      toast.error(`Sign in with ${provider} failed`);
+    } finally {
+      setLoading(false); // ✅ stop loading
     }
-  }
-};
-
-const handleSignin = async (e, provider) => {
-  e.preventDefault();   
-  if(provider === 'google') {   
-    signIn('google', {
-      callbackUrl: '/',
-
-    });
-    console.log("signing in with google");
-    toast.success("Signed in with Google...");
-    } else if (provider === 'github') { 
-    signIn('github', {
-      callbackUrl: '/',
-    }); 
-    console.log("signing in with github");
-    toast.success("Signed in with GitHub...");
-
-    }
-}
-
-
+  };
 
   return (
-<div className="fixed inset-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-md p-6 w-full max-w-md shadow-lg">
-       <div className="flex justify-between items-center mb-4">
-  <Button
-    onClick={onClose}
-    className="bg-transparent text-black font-bold text-xl border-b-2 border-black"
-  >
-    ✕
-  </Button>
-</div>
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm">
+      {loading && <Loader />} {/* ✅ Loader here */}
+      <div className="bg-white rounded-md p-6 w-full max-w-md shadow-lg relative z-10">
+        <div className="flex justify-between items-center mb-4">
+          <Button
+            onClick={onClose}
+            className="bg-transparent text-black font-bold text-xl border-b-2 border-black"
+          >
+            ✕
+          </Button>
+        </div>
 
-<div className="text-pink-500">
-  <h2 className="text-xl sm:text-2xl md:text-3xl text-purple-600 font-bold text-center mb-4">
-    <span   className={cn(
-                        "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600",
-                        pacifico.className,
-                      )} >Welcome Back let's get started ! </span>
-  </h2>
-</div>
-
+        <h2 className="text-xl sm:text-2xl md:text-3xl text-purple-600 font-bold text-center mb-4">
+          <span className={cn("text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600", pacifico.className)}>
+            Welcome Back let's get started!
+          </span>
+        </h2>
 
         <form onSubmit={handleonsubmit} className="flex flex-col gap-3">
+          {authMode === 'signup' && (
+            <Input
+              type="text"
+              name="name"
+              placeholder="Enter your name"
+              onChange={handleonchange}
+              value={name}
+              required
+            />
+          )}
           <Input
             type="email"
             name="email"
             placeholder="Enter your email"
-            className="border border-gray-400 p-2 rounded"
             onChange={handleonchange}
             value={email}
             required
@@ -165,14 +158,13 @@ const handleSignin = async (e, provider) => {
             type="password"
             name="password"
             placeholder="Enter your password"
-            className="border border-gray-400 p-2 rounded"
             onChange={handleonchange}
             value={password}
             required
           />
 
-          <Button type="submit" className={`w-full ${authMode === 'login' ? 'bg-blue-500' : 'bg-green-500'} text-white`}>
-            {authMode === 'login' ? 'Login' : 'Sign Up'}
+          <Button type="submit" className={`w-full ${authMode === 'signin' ? 'bg-blue-500' : 'bg-green-500'} text-white`}>
+            {authMode === 'signin' ? 'Login' : 'Sign Up'}
           </Button>
         </form>
 
@@ -186,12 +178,12 @@ const handleSignin = async (e, provider) => {
         </div>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          {authMode === 'login' ? "Don't have an account?" : "Already have an account?"}
+          {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
           <span
             className="text-blue-500 cursor-pointer ml-1"
-            onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+            onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
           >
-            {authMode === 'login' ? 'Sign Up' : 'Login'}
+            {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
           </span>
         </p>
 
