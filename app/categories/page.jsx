@@ -4,6 +4,7 @@ import { useAppContext } from "@/app/context/AppContext"
 import { useEffect, useRef, useCallback, memo } from "react"
 import Link from "next/link"
 import { useState } from "react"
+import { toast } from "react-toastify"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 import { FaArrowRight, FaArrowLeft, FaStar, FaHeart } from "react-icons/fa"
@@ -97,7 +98,7 @@ const GigCard = memo(({ gig }) => {
 GigCard.displayName = "GigCard"
 
 const Gigs = () => {
-  const { session, gigs, getAllGigs } = useAppContext()
+  const { session, gigs, getAllGigs ,postGig} = useAppContext()
   const scrollRef = useRef(null)
   const [showAll, setShowAll] = useState(false)
 
@@ -234,9 +235,8 @@ const Gigs = () => {
   },
 ];
 
-const PostAllGigs = () => {
   const handlePostAll = async () => {
-    for (const gig of gigs) {
+    for (const gig of Agigs) {
       try {
         await postGig(gig);
         toast.success(`Posted gig: ${gig.title}`);
@@ -244,13 +244,13 @@ const PostAllGigs = () => {
         console.error("Error posting gig:", gig.title, error);
         toast.error(`Failed to post gig: ${gig.title}`);
       }
-    }}}
+    }}
 
   return (
     <div className="min-h-screen bg-gray-50">
         <button
-      onClick={handlePostAll}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+      onClick={() => handlePostAll()}
+      className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
     >
       Post All Gigs
     </button>
