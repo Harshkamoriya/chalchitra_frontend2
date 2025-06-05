@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 
 export const AppContext = createContext();
 
+// ✅ Custom Hook
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (!context) {
@@ -13,6 +14,12 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+// ✅ Base URL logic
+const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://chalchitra-frontend2.vercel.app"
+    : "http://localhost:3000";
 
 export const AppContextProvider = ({ children }) => {
   const { data: session, status } = useSession();
@@ -22,7 +29,7 @@ export const AppContextProvider = ({ children }) => {
   // ✅ Fetch all gigs
   const getAllGigs = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/gigs", {
+      const response = await fetch(`${BASE_URL}/api/gigs`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -44,7 +51,7 @@ export const AppContextProvider = ({ children }) => {
   // ✅ Post a new gig
   const postGig = async (gigData) => {
     try {
-      const response = await fetch("http://localhost:3000/api/gigs", {
+      const response = await fetch(`${BASE_URL}/api/gigs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +75,7 @@ export const AppContextProvider = ({ children }) => {
   // ✅ Fetch all registered users
   const fetchAllUsers = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/users", {
+      const response = await fetch(`${BASE_URL}/api/users`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
