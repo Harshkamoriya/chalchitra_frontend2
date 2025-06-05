@@ -135,8 +135,125 @@ const Gigs = () => {
     { name: "Miscellaneous", href: "/miscellaneous" },
   ]
 
+  const Agigs = [
+  {
+    title: "Social Media Promo Videos",
+    description: "Create eye-catching promos for Instagram and Facebook.",
+    price: 30,
+    image: "https://source.unsplash.com/featured/?social-media",
+    gallery: [
+      "https://source.unsplash.com/featured/?promo1",
+      "https://source.unsplash.com/featured/?promo2",
+      "https://source.unsplash.com/featured/?promo3",
+    ],
+    category: "Social & Marketing",
+  },
+  {
+    title: "Presenter Spokesperson Video",
+    description: "Hire a professional presenter to explain your product or service.",
+    price: 70,
+    image: "https://source.unsplash.com/featured/?presenter",
+    gallery: [
+      "https://source.unsplash.com/featured/?presenter1",
+      "https://source.unsplash.com/featured/?presenter2",
+      "https://source.unsplash.com/featured/?presenter3",
+    ],
+    category: "Presenter Videos",
+  },
+  {
+    title: "Animated Explainer Videos",
+    description: "2D animation explainer videos for startups and apps.",
+    price: 120,
+    image: "https://source.unsplash.com/featured/?animation",
+    gallery: [
+      "https://source.unsplash.com/featured/?explainer1",
+      "https://source.unsplash.com/featured/?explainer2",
+      "https://source.unsplash.com/featured/?explainer3",
+    ],
+    category: "Explainer Videos",
+  },
+  {
+    title: "Custom Logo Animation",
+    description: "Professional logo animations in 24 hours.",
+    price: 25,
+    image: "https://source.unsplash.com/featured/?logo-animation",
+    gallery: [
+      "https://source.unsplash.com/featured/?logo1",
+      "https://source.unsplash.com/featured/?logo2",
+      "https://source.unsplash.com/featured/?logo3",
+    ],
+    category: "Animation",
+  },
+  {
+    title: "Product Showcase Video",
+    description: "High-quality product demo videos with transitions and effects.",
+    price: 60,
+    image: "https://source.unsplash.com/featured/?product-video",
+    gallery: [
+      "https://source.unsplash.com/featured/?product1",
+      "https://source.unsplash.com/featured/?product2",
+      "https://source.unsplash.com/featured/?product3",
+    ],
+    category: "Product Videos",
+  },
+  {
+    title: "Motion Graphics Intro",
+    description: "Stylish and modern intros using After Effects.",
+    price: 40,
+    image: "https://source.unsplash.com/featured/?motion-graphics",
+    gallery: [
+      "https://source.unsplash.com/featured/?motion1",
+      "https://source.unsplash.com/featured/?motion2",
+      "https://source.unsplash.com/featured/?motion3",
+    ],
+    category: "Motion Graphics",
+  },
+  {
+    title: "Cinematic Film Production",
+    description: "End-to-end film production for commercials and short films.",
+    price: 300,
+    image: "https://source.unsplash.com/featured/?film-production",
+    gallery: [
+      "https://source.unsplash.com/featured/?film1",
+      "https://source.unsplash.com/featured/?film2",
+      "https://source.unsplash.com/featured/?film3",
+    ],
+    category: "Filmed Video Production",
+  },
+  {
+    title: "Unique Video Editing Requests",
+    description: "Handling unique and out-of-the-box video projects.",
+    price: 75,
+    image: "https://source.unsplash.com/featured/?creative-editing",
+    gallery: [
+      "https://source.unsplash.com/featured/?misc1",
+      "https://source.unsplash.com/featured/?misc2",
+      "https://source.unsplash.com/featured/?misc3",
+    ],
+    category: "Miscellaneous",
+  },
+];
+
+const PostAllGigs = () => {
+  const handlePostAll = async () => {
+    for (const gig of gigs) {
+      try {
+        await postGig(gig);
+        toast.success(`Posted gig: ${gig.title}`);
+      } catch (error) {
+        console.error("Error posting gig:", gig.title, error);
+        toast.error(`Failed to post gig: ${gig.title}`);
+      }
+    }}}
+
   return (
     <div className="min-h-screen bg-gray-50">
+        <button
+      onClick={handlePostAll}
+      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+    >
+      Post All Gigs
+    </button>
       {/* Enhanced Category Navigation */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
