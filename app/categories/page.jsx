@@ -6,14 +6,17 @@ import Link from "next/link"
 import { useState } from "react"
 import { toast } from "react-toastify"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { useRouter } from "next/navigation"
 
 import { FaArrowRight, FaArrowLeft, FaStar, FaHeart } from "react-icons/fa"
 import { HiOutlineLocationMarker } from "react-icons/hi"
 
 // Memoized GigCard component to prevent unnecessary re-renders
-const GigCard = memo(({ gig }) => {
+
+
+const GigCard = memo(({ gig ,onClick}) => {
   return (
-    <div className="group bg-white rounded-xl mb-15 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200 transform hover:-translate-y-1">
+    <div onClick={onClick} className="group bg-white rounded-xl mb-15 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200 transform hover:-translate-y-1">
       {/* Image Container */}
       <div className="relative overflow-hidden">
         <img
@@ -98,9 +101,11 @@ const GigCard = memo(({ gig }) => {
 GigCard.displayName = "GigCard"
 
 const Gigs = () => {
+
   const { session, gigs, getAllGigs ,postGig} = useAppContext()
   const scrollRef = useRef(null)
   const [showAll, setShowAll] = useState(false)
+  const Router = useRouter();
 
   useEffect(() => {
     getAllGigs()
@@ -126,7 +131,7 @@ const Gigs = () => {
   }, [])
 
   const categories = [
-    { name: "Editing & Post Production", href: "/Editing%&%Post%Production" },
+    { name: "Editing & Post Production", href: "/Editing & Post Production" },
     { name: "Social and Marketing", href: "/social-and-marketing" },
     { name: "Explainer Videos", href: "/explainer-videos" },
     { name: "Animation", href: "/animation" },
@@ -246,6 +251,11 @@ const Gigs = () => {
       }
     }}
 
+    const handleClick = (id)=>{
+Router.push(`/categories/${id}`)
+    }
+
+
   return (
     <div className="min-h-screen bg-gray-50">
         <button
@@ -331,7 +341,12 @@ const Gigs = () => {
         }`}
       >
         {gigs.map((gig) => (
-          <GigCard key={gig._id} gig={gig} />
+<GigCard
+  key={gig._id}
+  gig={gig}
+  onClick={() => handleClick(`/${encodeURIComponent(gig.title)}/${gig._id}`)}
+/>
+ 
         ))}
       </div>
 
