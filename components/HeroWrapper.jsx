@@ -11,6 +11,7 @@ import Loader from "./Loader"
 import ErrorBoundary from "./error-boundary"
 import ElegantShape from "./elegant-shape"
 import StatCard from "./stat-card"
+import { useRouter } from 'next/navigation';
 
 const pacifico = Pacifico({
   subsets: ["latin"],
@@ -23,6 +24,7 @@ const HeroWrapper = memo(function HeroWrapper() {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [error, setError] = useState(null)
+  const router = useRouter();
 
   useEffect(() => {
     const loadComponent = async () => {
@@ -57,6 +59,10 @@ const HeroWrapper = memo(function HeroWrapper() {
     window.location.reload()
   }
 
+
+  const handleClick = ()=>{
+    router.push("/categories")
+  }
   const handleGoHome = () => {
     window.location.href = "/"
   }
@@ -179,8 +185,9 @@ const HeroWrapper = memo(function HeroWrapper() {
               className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-8 sm:mb-12">
               <Button
                 size="lg"
-                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 sm:px-8 py-3 text-sm sm:text-base lg:text-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25">
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                 onClick={() => handleClick()} 
+                className="w-full cursor-pointer sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 sm:px-8 py-3 text-sm sm:text-base lg:text-lg transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/25">
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2 "/>
                 Find Video Editors
               </Button>
               <Button

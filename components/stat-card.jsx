@@ -19,3 +19,4 @@ const StatCard = memo(function StatCard({ icon: Icon, value, label, delay }) {
 })
 
 export default StatCard
+

@@ -82,3 +82,28 @@ export async function GET(){
         
     }
 }
+
+
+
+
+export async function DELETE(req) {
+  try {
+    await connectToDB();
+
+    const result = await Gigs.deleteMany({}); // Deletes all documents
+
+    return NextResponse.json({
+      success: true,
+      message: `${result.deletedCount} gigs deleted successfully`,
+      status: 200
+    });
+
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      message: "Failed to delete gigs",
+      error: error.message,
+      status: 500
+    });
+  }
+}

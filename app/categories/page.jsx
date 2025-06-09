@@ -20,21 +20,21 @@ const GigCard = memo(({ gig ,onClick}) => {
       {/* Image Container */}
       <div className="relative overflow-hidden">
         <img
-          src={gig.image || "/placeholder.svg?height=200&width=300"}
+          src={gig.image ||"/1.jpg" }
           alt={gig.title}
           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
         {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+        {/* <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
           <button className="opacity-0 group-hover:opacity-100 bg-white text-gray-800 px-4 py-2 rounded-full font-medium transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
             View Details
           </button>
-        </div>
+        </div> */}
         {/* Favorite Icon */}
-        <button className="absolute top-3 right-3 p-2 bg-white bg-opacity-90 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50">
+        {/* <button className="absolute top-3 right-3 p-2 bg-white bg-opacity-90 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50">
           <FaHeart className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
-        </button>
+        </button> */}
       </div>
 
       {/* Content */}
@@ -146,7 +146,7 @@ const Gigs = () => {
     title: "Social Media Promo Videos",
     description: "Create eye-catching promos for Instagram and Facebook.",
     price: 30,
-    image: "https://source.unsplash.com/featured/?social-media",
+    image: "/1.jpg",
     gallery: [
       "https://source.unsplash.com/featured/?promo1",
       "https://source.unsplash.com/featured/?promo2",
@@ -158,7 +158,7 @@ const Gigs = () => {
     title: "Presenter Spokesperson Video",
     description: "Hire a professional presenter to explain your product or service.",
     price: 70,
-    image: "https://source.unsplash.com/featured/?presenter",
+    image: "/presenter1.png",
     gallery: [
       "https://source.unsplash.com/featured/?presenter1",
       "https://source.unsplash.com/featured/?presenter2",
@@ -170,7 +170,7 @@ const Gigs = () => {
     title: "Animated Explainer Videos",
     description: "2D animation explainer videos for startups and apps.",
     price: 120,
-    image: "https://source.unsplash.com/featured/?animation",
+    image: "/1a.jpg",
     gallery: [
       "https://source.unsplash.com/featured/?explainer1",
       "https://source.unsplash.com/featured/?explainer2",
@@ -182,7 +182,7 @@ const Gigs = () => {
     title: "Custom Logo Animation",
     description: "Professional logo animations in 24 hours.",
     price: 25,
-    image: "https://source.unsplash.com/featured/?logo-animation",
+    image: "/animation2.jpg",
     gallery: [
       "https://source.unsplash.com/featured/?logo1",
       "https://source.unsplash.com/featured/?logo2",
@@ -194,7 +194,7 @@ const Gigs = () => {
     title: "Product Showcase Video",
     description: "High-quality product demo videos with transitions and effects.",
     price: 60,
-    image: "https://source.unsplash.com/featured/?product-video",
+    image: "/product1.png",
     gallery: [
       "https://source.unsplash.com/featured/?product1",
       "https://source.unsplash.com/featured/?product2",
@@ -206,7 +206,7 @@ const Gigs = () => {
     title: "Motion Graphics Intro",
     description: "Stylish and modern intros using After Effects.",
     price: 40,
-    image: "https://source.unsplash.com/featured/?motion-graphics",
+    image:"motion1.jpg",
     gallery: [
       "https://source.unsplash.com/featured/?motion1",
       "https://source.unsplash.com/featured/?motion2",
@@ -218,7 +218,7 @@ const Gigs = () => {
     title: "Cinematic Film Production",
     description: "End-to-end film production for commercials and short films.",
     price: 300,
-    image: "https://source.unsplash.com/featured/?film-production",
+    image: "film1.png",
     gallery: [
       "https://source.unsplash.com/featured/?film1",
       "https://source.unsplash.com/featured/?film2",
@@ -230,7 +230,7 @@ const Gigs = () => {
     title: "Unique Video Editing Requests",
     description: "Handling unique and out-of-the-box video projects.",
     price: 75,
-    image: "https://source.unsplash.com/featured/?creative-editing",
+    image: "motion2.png",
     gallery: [
       "https://source.unsplash.com/featured/?misc1",
       "https://source.unsplash.com/featured/?misc2",
@@ -340,6 +340,8 @@ Router.push(`/categories/${id}`)
           showAll ? "max-h-full" : "max-h-[900px] overflow-hidden"
         }`}
       >
+
+
         {gigs.map((gig) => (
 <GigCard
   key={gig._id}
