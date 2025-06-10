@@ -21,9 +21,24 @@ export async function POST(req) {
 
   try {
     await connectToDB();
-    const data = await req.json();
+    const body = await req.json();
 
-    const { title, description, price, image, gallery, category } = data;
+    const {
+      title,
+      description,
+      category,
+      tags = [],
+      packages = [],
+      media,
+      requirements = [],
+      faq = [],
+      isFeatured = false,
+      status = 'active',
+    } = body;
+
+        if (!title || !description || !category || !media?.coverImage) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
 
     const user = await User.findOne({ email: session.user.email }); // ✅ Fix here too
 
@@ -36,23 +51,27 @@ export async function POST(req) {
       });
     }
 
-    const gig = await Gigs.create({
+     const newGig = new Gigs({
       title,
       description,
-      price,
-      image,
-      gallery,
+      seller: user._id, // from logged in user session
       category,
-      user: user._id,
+      tags,
+      packages,
+      media,
+      requirements,
+      faq,
+      isFeatured,
+      status,
     });
 
-    await gig.save();
+    await newGig.save();
 
     return NextResponse.json({
       message: "Gig created successfully",
       success: true,
       status: 201,
-      gig,
+      newGig,
     });
   } catch (error) {
     console.error("Error creating gig:", error);
@@ -64,27 +83,33 @@ export async function POST(req) {
   }
 }
 
-
-export async function GET(){
-    try {
-      
-        await connectToDB();
-        const gigs = await Gigs.find({});
-        console.log(gigs , "where are the gigs")
-        if(!gigs){
-            return NextResponse.json({success:false , message: "gigs not found " , status:200});
-
-        }
-        return NextResponse.json({success:true , status:200 ,message:"gigs found successfully" , gigs});
-    } catch (error) {
-        console.error("error found" , error.message);
-        return NextResponse.json({success:false , message:" something went wrong " , status :500});
-        
+export async function GET() {
+  try {
+    await connectToDB();
+    const gigs = await Gigs.find({});
+    console.log(gigs, "where are the gigs");
+    if (!gigs) {
+      return NextResponse.json({
+        success: false,
+        message: "gigs not found ",
+        status: 200,
+      });
     }
+    return NextResponse.json({
+      success: true,
+      status: 200,
+      message: "gigs found successfully",
+      gigs,
+    });
+  } catch (error) {
+    console.error("error found", error.message);
+    return NextResponse.json({
+      success: false,
+      message: " something went wrong ",
+      status: 500,
+    });
+  }
 }
-
-
-
 
 export async function DELETE(req) {
   try {
@@ -95,15 +120,14 @@ export async function DELETE(req) {
     return NextResponse.json({
       success: true,
       message: `${result.deletedCount} gigs deleted successfully`,
-      status: 200
+      status: 200,
     });
-
   } catch (error) {
     return NextResponse.json({
       success: false,
       message: "Failed to delete gigs",
       error: error.message,
-      status: 500
+      status: 500,
     });
   }
 }
