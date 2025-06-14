@@ -26,7 +26,7 @@ const Page = async ({ params }) => {
           <h1 className="text-3xl font-semibold text-gray-800">{gig.description}</h1>
         </div>
         <div className="slider-box w-full rounded-lg overflow-hidden border border-gray-200">
-          <img src={gig.image} alt={gig.title} className="w-full h-[400px] object-cover" />
+          <img src={gig.media.coverImage} alt={gig.title} className="w-full h-[400px] object-cover" />
         </div>
       </div>
 
@@ -47,7 +47,7 @@ const Page = async ({ params }) => {
         {/* Gig Details */}
         <div className="p-6 space-y-4">
           <div className="flex items-center text-xl font-bold text-gray-800">
-            <FaRupeeSign className="mr-1" /> {gig.price}
+            <FaRupeeSign className="mr-1" /> {gig.packages.price}
           </div>
           <p className="text-gray-700 text-base">Save up to 15% with Subscribe to Save</p>
           <p className="text-gray-600 text-sm">

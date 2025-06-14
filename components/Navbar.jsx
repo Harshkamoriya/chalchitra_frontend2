@@ -1,70 +1,81 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Pacifico } from "next/font/google"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Search, Menu, X, Bell, MessageCircle, Heart, Home, Info, Video, LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { AuthModal } from "./AuthModal"
-import { useSession, signOut } from "next-auth/react"
+import { useEffect, useState } from "react";
+import { Pacifico } from "next/font/google";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  Search,
+  Menu,
+  X,
+  Bell,
+  MessageCircle,
+  Heart,
+  Home,
+  Info,
+  Video,
+  LogOut,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AuthModal } from "./AuthModal";
+import { useSession, signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import Auth_modal from "./Auth_modal"
+} from "@/components/ui/dropdown-menu";
+import Auth_modal from "./Auth_modal";
+import Link from "next/link";
 
 const pacifico = Pacifico({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-pacifico",
-})
+});
 
 const Navbar = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [onClose , setOnClose] = useState(() => () => setShowAuthModal(false))
-  const [authMode, setAuthMode] = useState("signin")
-  const { data: session, status } = useSession()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [onClose, setOnClose] = useState(() => () => setShowAuthModal(false));
+  const [authMode, setAuthMode] = useState("signin");
+  const { data: session, status } = useSession();
 
-  useEffect(()=>{
+  useEffect(() => {
     // console.log(data , "session data")
-    console.log("session  " ,session)
-  })
+    console.log("session  ", session);
+  }, [session]);
 
   // Mock notification data - replace with real data
-  const mockNotifications = 3
-  const mockMessages = 2
+  const mockNotifications = 3;
+  const mockMessages = 2;
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   const handleAuthClick = (mode) => {
-    setAuthMode(mode)
-    setShowAuthModal(true)
-    setIsMobileMenuOpen(false)
-  }
+    setAuthMode(mode);
+    setShowAuthModal(true);
+    setIsMobileMenuOpen(false);
+  };
 
   const handleSignOut = async () => {
-    
-    await signOut({ callbackUrl: "/" })
-  }
+    await signOut({ callbackUrl: "/" });
+  };
 
   const getInitials = (name) => {
     return name
       .split(" ")
       .map((n) => n[0])
       .join("")
-      .toUpperCase()
-  }
+      .toUpperCase();
+  };
 
-  const isLoggedIn = status === "authenticated" && session
-
+  const isLoggedIn = status === "authenticated" && session;
+  console.log(isLoggedIn, "isloggedin ");
   return (
     <>
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -77,10 +88,10 @@ const Navbar = () => {
                 <span
                   className={cn(
                     "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600",
-                    pacifico.className,
+                    pacifico.className
                   )}
                 >
-                  VideoHub
+                  ChalChitra
                 </span>
               </div>
             </div>
@@ -97,12 +108,29 @@ const Navbar = () => {
               </div>
             </div>
 
+            {/* <div className="seller flex text-center items-center">
+              <Link href="/become-a-seller">
+                <p className="text-gray-700">become a seller</p>
+              </Link>
+            </div> */}
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
+              <div className="cursor-pointer px-3 py-1 rounded-md transition-colors group">
+                <Link href="/become_seller">
+                  <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200">
+                    Become a Seller
+                  </p>
+                </Link>
+              </div>
+
               {!isLoggedIn ? (
                 // Not logged in state
                 <>
-                  <a href="/about" className="text-gray-700 hover:text-purple-600 transition-colors font-medium">
+                  <a
+                    href="/about"
+                    className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                  >
                     About
                   </a>
                   <Button
@@ -142,12 +170,20 @@ const Navbar = () => {
 
                   <Heart className="h-6 w-6 text-gray-600 hover:text-purple-600 cursor-pointer transition-colors" />
 
+                  <div className="cursor-pointer px-3 py-1 rounded-md transition-colors group">
+                    <Link href="/earning-mode">
+                      <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200">
+                        Start Earning
+                      </p>
+                    </Link>
+                  </div>
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div className="flex items-center cursor-pointer">
                         {session?.user?.image ? (
                           <img
-                            src={session.user.image || "/placeholder.svg"}
+                            src={session.user.image || "/1a.jpg"}
                             alt="Profile"
                             className="h-8 w-8 rounded-full border-2 border-gray-300"
                           />
@@ -162,7 +198,9 @@ const Navbar = () => {
                       <div className="flex items-center justify-start gap-2 p-2">
                         <div className="flex flex-col space-y-1 leading-none">
                           <p className="font-medium">{session?.user?.name}</p>
-                          <p className="w-[200px] truncate text-sm text-muted-foreground">{session?.user?.email}</p>
+                          <p className="w-[200px] truncate text-sm text-muted-foreground">
+                            {session?.user?.email}
+                          </p>
                         </div>
                       </div>
                       <DropdownMenuSeparator />
@@ -182,8 +220,17 @@ const Navbar = () => {
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <Button variant="ghost" size="sm" onClick={toggleMobileMenu} className="text-gray-700">
-                {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleMobileMenu}
+                className="text-gray-700"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </Button>
             </div>
           </div>
@@ -243,10 +290,12 @@ const Navbar = () => {
                 <>
                   <div className="flex items-center space-x-3 py-2">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-medium">
-                        {getInitials(session?.user?.name || "User")}
-                      </div>
+                      {getInitials(session?.user?.name || "User")}
+                    </div>
                     <div>
-                      <p className="font-medium text-gray-900">{session?.user?.name}</p>
+                      <p className="font-medium text-gray-900">
+                        {session?.user?.name}
+                      </p>
                       <p className="text-sm text-gray-500">View Profile</p>
                     </div>
                   </div>
@@ -257,7 +306,11 @@ const Navbar = () => {
                         <Bell className="h-5 w-5 text-gray-600" />
                         <span className="text-gray-700">Notifications</span>
                       </div>
-                      {mockNotifications > 0 && <Badge className="bg-red-500 text-white">{mockNotifications}</Badge>}
+                      {mockNotifications > 0 && (
+                        <Badge className="bg-red-500 text-white">
+                          {mockNotifications}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between py-2">
@@ -265,7 +318,11 @@ const Navbar = () => {
                         <MessageCircle className="h-5 w-5 text-gray-600" />
                         <span className="text-gray-700">Messages</span>
                       </div>
-                      {mockMessages > 0 && <Badge className="bg-red-500 text-white">{mockMessages}</Badge>}
+                      {mockMessages > 0 && (
+                        <Badge className="bg-red-500 text-white">
+                          {mockMessages}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-3 py-2">
@@ -273,7 +330,11 @@ const Navbar = () => {
                       <span className="text-gray-700">Favorites</span>
                     </div>
 
-                    <Button variant="outline" className="w-full mt-4" onClick={handleSignOut}>
+                    <Button
+                      variant="outline"
+                      className="w-full mt-4"
+                      onClick={handleSignOut}
+                    >
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout
                     </Button>
@@ -286,9 +347,13 @@ const Navbar = () => {
       </nav>
 
       {/* Auth Modal */}
-      <Auth_modal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} defaultMode={authMode} />
+      <Auth_modal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        defaultMode={authMode}
+      />
     </>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;

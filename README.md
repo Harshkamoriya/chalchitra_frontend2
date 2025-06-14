@@ -97,3 +97,101 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 ---
 
 **Note:** This project does not include backend logic. See the `backend/` folder for backend code.
+
+---
+
+## Backend Overview
+
+Although this repository is focused on the frontend, the project includes a robust backend built with Next.js API routes (in `app/api/`) and Mongoose models for MongoDB. The backend handles all business logic, authentication, and data management for the marketplace.
+
+### API Structure
+
+All backend logic is implemented using Next.js API routes under the `app/api/` directory. These endpoints provide RESTful APIs for the following resources:
+
+- **Users**: Registration, authentication, profile management
+- **Gigs**: CRUD operations for video editing gigs
+- **Orders**: Placing and managing orders between clients and editors
+- **Reviews**: User reviews for gigs and editors
+- **Earnings**: Tracking editor earnings
+- **Withdrawals**: Withdrawal requests and status tracking
+- **Notifications**: User notifications for platform events
+- **Saved Gigs**: Users can bookmark gigs for later
+- **Chats**: Real-time messaging between users
+
+### Data Models
+
+The backend uses Mongoose models for MongoDB, located in the `models/` directory. The main models include:
+
+- **User**: Stores user information, authentication details, and roles (client/editor)
+- **Gigs**: Represents video editing service listings, including details, pricing, and owner
+- **Orders**: Tracks transactions between clients and editors, including status and delivery
+- **Review**: Stores user reviews and ratings for gigs and editors
+- **Earnings**: Tracks editor earnings from completed orders
+- **Withdrawal**: Handles withdrawal requests and payment status for editors
+- **Notification**: Stores notifications for user actions and platform events
+- **SavedGig**: Prevents duplicate bookmarks; each user can save a gig only once
+- **Chat**: Stores chat messages and conversation metadata between users
+
+Each model is designed with appropriate references and indexes for efficient querying and data integrity. For example, the `SavedGig` model uses a compound unique index to prevent a user from saving the same gig multiple times.
+
+### Example: SavedGig Model
+
+```js
+import mongoose from "mongoose";
+const savedGigSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  gig: { type: mongoose.Schema.Types.ObjectId, ref: "Gigs", required: true },
+}, { timestamps: true });
+savedGigSchema.index({ user: 1, gig: 1 }, { unique: true });
+export default mongoose.models.SavedGig || mongoose.model("SavedGig", savedGigSchema);
+```
+
+### API Usage
+
+The frontend communicates with these backend endpoints using `fetch` or `axios` for:
+
+- User authentication and session management
+- Fetching, creating, and updating gigs
+- Placing and tracking orders
+- Submitting and viewing reviews
+- Managing earnings and withdrawals for editors
+- Sending and receiving notifications
+- Bookmarking gigs
+- Real-time chat between users
+
+---
+
+## Additional Folders
+
+- **lib/**: Contains utility functions and helpers used across the app and API routes.
+- **providers/**: Contains context providers for authentication, state management, or third-party integrations.
+- **public/**: Static files served at the root level (e.g., images, favicon, robots.txt).
+
+---
+
+## Roadmap
+
+- [x] Modular frontend with Next.js App Router and Tailwind CSS
+- [x] Comprehensive backend with RESTful API routes
+- [x] User authentication and role management
+- [x] Gigs CRUD and search
+- [x] Orders and review system
+- [x] Earnings and withdrawal management
+- [x] Notifications and real-time chat
+- [x] Saved gigs/bookmarking
+- [ ] Payment gateway integration
+- [ ] Admin dashboard and analytics
+
+---
+
+## Contributing
+
+Contributions are welcome! Please open issues or submit pull requests for improvements, bug fixes, or new features.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
