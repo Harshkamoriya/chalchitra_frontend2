@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  displayName: { type: String }, // Optional: Public display name
 
   email: { type: String, required: true, unique: true },
-
-  image: { type: String }, // Profile picture
+  image: { type: String },
 
   password: {
     type: String,
@@ -26,21 +26,41 @@ const UserSchema = new mongoose.Schema({
     default: "user",
   },
 
-  isSeller: { type: Boolean, default: false }, // Determines if user can create gigs
-
+  isSeller: { type: Boolean, default: false },
   sellerLevel: {
     type: String,
     enum: ["new", "level_1", "level_2", "top_rated"],
     default: "new",
   },
 
-  about: { type: String, maxlength: 1000 },
-
+  description: { type: String, maxlength: 1000 },
   country: { type: String },
-
   languages: [{ type: String }],
+  skills: [{ type: String }],
 
-  skills: [{ type: String }], // Optional: Used for filtering/search
+  occupation: { type: String },
+
+  education: [
+    {
+      school: String,
+      degree: String,
+      field: String,
+      from: Date,
+      to: Date,
+      description: String,
+    },
+  ],
+
+  certifications: [
+    {
+      name: String,
+      issuer: String,
+      date: Date,
+      link: String,
+    },
+  ],
+
+  portfolio: [{ type: String }],
 
   socialLinks: {
     linkedin: { type: String },
@@ -49,9 +69,12 @@ const UserSchema = new mongoose.Schema({
     website: { type: String },
   },
 
-  portfolio: [{ type: String }], // Links to portfolio projects or videos
+  phoneVerification: {
+    phoneNumber: String,
+    isVerified: { type: Boolean, default: false },
+  },
 
-  isVerified: { type: Boolean, default: false },
+  isVerified: { type: Boolean, default: false }, // Email verified
 
   completedOrders: { type: Number, default: 0 },
 
@@ -63,8 +86,8 @@ const UserSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Full-text index for profile search
-UserSchema.index({ name: "text", skills: "text", about: "text" });
+// ✅ Full-text index for better search
+UserSchema.index({ name: "text", skills: "text", description: "text" });
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;

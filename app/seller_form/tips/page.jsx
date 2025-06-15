@@ -1,4 +1,7 @@
+import BackButton from "@/components/BackBtn"
 import { UserCircle, Film, Laptop, Camera, FileText, ShieldCheck, ArrowLeft, ArrowRight } from "lucide-react"
+import Link from "next/link"
+
 
 const page = () => {
   return (
@@ -113,15 +116,13 @@ const page = () => {
 
       {/* Navigation buttons */}
       <div className="flex flex-wrap justify-between items-center mt-6 gap-4">
-        <button className="flex items-center text-gray-600 hover:text-green-700 transition-colors font-medium">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </button>
-
-        <button className="flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg">
+        <BackButton/>
+ 
+       <Link href="/seller_form/avoid">
+        <button className="flex items-center bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:shadow-lg cursor-pointer">
           Continue
           <ArrowRight className="w-4 h-4 ml-2" />
-        </button>
+        </button></Link>
       </div>
     </div>
   )

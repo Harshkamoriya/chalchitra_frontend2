@@ -184,6 +184,38 @@ The frontend communicates with these backend endpoints using `fetch` or `axios` 
 
 ---
 
+
+## Notable Frontend Pages
+
+ChalChitra includes several custom pages to enhance the user and seller experience. Below are some key pages and their roles in the platform:
+
+### Seller Onboarding & Tips
+
+- **`/seller_form` (`app/seller_form/page.jsx`)**  
+  This page guides new editors through the onboarding process. It features:
+  - An engaging video introduction and live preview.
+  - A three-step process for editors: building a profile, uploading work samples, and launching their first gig.
+  - Highlights of platform benefits such as competitive rates, flexible schedules, and portfolio building.
+  - Responsive design with a clear call-to-action to become a video editor.
+
+- **`/seller_form/tips` (`app/seller_form/tips/page.jsx`)**  
+  This page provides actionable tips for editors to create a successful profile, including:
+  - Crafting a detailed profile and showcasing work.
+  - Listing tools and software expertise.
+  - Uploading a professional profile picture.
+  - Clearly describing services and verifying identity.
+  - Visual progress indicators and navigation for a smooth onboarding flow.
+
+### Become a Seller Landing
+
+- **`/become_seller` (`app/become_seller/page.jsx`)**  
+  This page acts as a landing for users interested in joining as editors. It renders the `LandPage` component, which likely contains promotional content and a call-to-action for potential sellers.
+
+---
+
+These pages are designed to streamline the seller onboarding process, provide guidance, and encourage editors to present their skills effectively on the platform.
+
+
 ## Contributing
 
 Contributions are welcome! Please open issues or submit pull requests for improvements, bug fixes, or new features.
@@ -193,5 +225,6 @@ Contributions are welcome! Please open issues or submit pull requests for improv
 ## License
 
 This project is licensed under the MIT License.
+
 
 ---
