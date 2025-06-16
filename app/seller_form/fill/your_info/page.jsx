@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import ResponsiveButton from "@/components/responsive-button"
 import PersonalInfo from "@/components/personal-info"
 import StepIndicator from "@/components/step-indicator"
 import CompletionRate from "@/components/completion"
@@ -78,24 +80,11 @@ export default function CleanMultiStepForm() {
 //   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with step indicator and completion rate */}
-      {/* <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-8 py-6">
-          <div className="flex justify-between items-center">
-            <StepIndicator currentStep={1} />
-            <CompletionRate completion={calculateCompletion()} />
-          </div>
-        </div>
-      </div> */}
-
-      {/* Main content */}
-      <div className="max-w-4xl mx-auto px-8 py-12">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="min-h-screen p-12 ">
+      
             <PersonalInfo formData={formData} updateFormData={updateFormData}/>
-            
             </div>
-      </div>
-    </div>
+      
+    
   )
 }

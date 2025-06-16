@@ -7,8 +7,10 @@ import { toast } from "react-toastify"
 import { Plus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import ResponsiveButton from "./responsive-button"
 import { Textarea } from "@/components/ui/textarea"
 import { CalendarDays, Trash2 } from "lucide-react"
+import BackButton from "./BackBtn"
 
 
 export default function ProfessionalDetails({ formData, updateFormData }) {
@@ -94,12 +96,12 @@ const updateEducationField = (index, field, value) => {
 
 
   return (
-    <div className="p-12">
+    <div className="lg:px-12 ">
       {/* Header section */}
       <div className="mb-12">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4">Professional Info</h1>
+            <h1 className="text-4xl font-semibold text-gray-700 mb-4">Professional Info</h1>
             <p className="text-gray-600 max-w-2xl leading-relaxed">
               Share your professional background, skills, and qualifications to showcase your expertise to potential
               customers.
@@ -114,7 +116,7 @@ const updateEducationField = (index, field, value) => {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Occupation */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Your Occupation*</label>
+          <label className="text-md font-medium text-gray-700">Your Occupation*</label>
           <Input
             type="text"
             placeholder="e.g., Software Developer, Graphic Designer, Marketing Consultant"
@@ -128,7 +130,7 @@ const updateEducationField = (index, field, value) => {
 
         {/* Skills */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Skills*</label>
+          <label className="text-md font-medium text-gray-700">Skills*</label>
           <div className="flex space-x-2">
             <Input
               type="text"
@@ -171,13 +173,13 @@ const updateEducationField = (index, field, value) => {
         {/* Education */}
         {/* Education Section (Enhanced) */}
 <div className="space-y-3">
-  <label className="text-sm font-medium text-gray-900">Education*</label>
+  <label className="text-md font-medium text-gray-700">Education*</label>
 
   {localData.education?.length > 0 ? (
     localData.education.map((edu, index) => (
       <div key={index} className="border rounded-lg p-4 mb-4 bg-gray-50 space-y-4 shadow-sm">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="font-medium text-gray-800">Education #{index + 1}</h3>
+          <h3 className="font-medium text-gray-700">Education #{index + 1}</h3>
           <button
             type="button"
             onClick={() => {
@@ -237,7 +239,8 @@ const updateEducationField = (index, field, value) => {
   <Button
     type="button"
     onClick={() => handleChange("education", [...(localData.education || []), { ...blankEducation }])}
-    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg"
+    className=""
+    variant="outline"
   >
     + Add Education
   </Button>
@@ -250,7 +253,7 @@ const updateEducationField = (index, field, value) => {
 
         {/* Certifications */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Certifications</label>
+          <label className="text-md font-medium text-gray-700">Certifications</label>
           <div className="flex space-x-2">
             <Input
               type="text"
@@ -294,7 +297,7 @@ const updateEducationField = (index, field, value) => {
 
         {/* Personal Website */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Personal Website</label>
+          <label className="text-md font-medium text-gray-700">Personal Website</label>
           <Input
             type="url"
             placeholder="https://yourportfolio.com"
@@ -309,20 +312,22 @@ const updateEducationField = (index, field, value) => {
 
         {/* Navigation buttons */}
         <div className="flex justify-between pt-8 border-t border-gray-200">
-          <Button
+          {/* <Button
             type="button"
             onClick={()=>{router.back()}}
             variant="outline"
             className="px-8 py-3 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg"
           >
             Previous
-          </Button>
-          <Button
+          </Button> */}
+          <BackButton/>
+          <ResponsiveButton
             type="submit"
-            className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
+            variant="gradient"
+            className="px-4"
           >
             Continue
-          </Button>
+          </ResponsiveButton>
         </div>
       </form>
     </div>

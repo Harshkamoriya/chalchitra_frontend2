@@ -18,34 +18,36 @@ export default function StepIndicator({ currentStep }) {
           <React.Fragment key={step.id}>
             <div className="flex items-center space-x-3">
               {/* Step circle */}
-              <div
-                className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-colors duration-300
-                  ${
-                    isCompleted || isActive
-                      ? "bg-green-500 border-green-500 text-white"
-                      : "bg-white border-gray-300 text-gray-400"
-                  }
-                `}
-              >
-                {step.id}
-              </div>
+             <div
+  className={`
+    w-8 h-8 rounded-full flex items-center justify-center text-md font-semibold border-2 transition-colors duration-300
+    ${
+      isCompleted || isActive
+        ? "border-transparent text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600"
+        : "bg-white border-gray-300 text-gray-400"
+    }
+  `}
+>
+  {step.id}
+</div>
+
 
               {/* Step name */}
-              <span
-                className={`
-                  text-sm font-medium transition-colors duration-300
-                  ${
-                    isActive
-                      ? "text-green-600"
-                      : isCompleted
-                      ? "text-gray-900"
-                      : "text-gray-400"
-                  }
-                `}
-              >
-                {step.name}
-              </span>
+           <span
+  className={`
+    text-lg font-medium transition-colors duration-300
+    ${
+      isActive
+        ? "text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600"
+        : isCompleted
+        ? "text-gray-900"
+        : "text-gray-400"
+    }
+  `}
+>
+  {step.name}
+</span>
+
             </div>
 
             {/* Arrow separator */}

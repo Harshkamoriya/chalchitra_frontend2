@@ -82,19 +82,21 @@ const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <Video className="h-8 w-8 text-purple-600 mr-2" />
-                <span
-                  className={cn(
-                    "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600",
-                    pacifico.className
-                  )}
-                >
-                  ChalChitra
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center flex-nowrap">
+  {/* Logo Image */}
+  <img
+    src="/logo.jpg"
+    alt="logo"
+    className="w-12 h-12 rounded-full object-cover"
+  />
+
+  {/* Brand Name */}
+  <span className="text-3xl font-extrabold text-gray-600">
+    {/* ChalChitra */}
+    
+  </span>
+</div>
+
 
             {/* Desktop Search Bar */}
             <div className="hidden md:block flex-1 max-w-2xl mx-8">

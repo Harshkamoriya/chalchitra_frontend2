@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import axios from "axios"
 import { useRouter } from "next/navigation"
 import { toast } from "react-toastify"
+import { ArrowRight } from "lucide-react"
+import ResponsiveButton from "./responsive-button"
 
 
 // Clean Personal Information component matching reference design
@@ -101,12 +103,12 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
 
 
   return (
-    <div className="p-12">
+    <div className=" mx-auto lg:px-16 m-auto p-2 ">
       {/* Header section */}
       <div className="mb-12">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4">Personal Info</h1>
+            <h1 className="text-4xl font-semibold text-gray-700 mb-4">Personal Info</h1>
             <p className="text-gray-600 max-w-2xl leading-relaxed">
               Tell us a bit about yourself. This information will appear on your public profile, so that potential
               buyers can get to know you better.
@@ -122,8 +124,8 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
         {/* Full Name */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-900">Full Name*</label>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Private</span>
+            <label className="text-md font-medium text-gray-700">Full Name*</label>
+            <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">Private</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
@@ -147,7 +149,7 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
 
         {/* Display Name */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Display Name*</label>
+          <label className="text-md font-medium text-gray-700">Display Name*</label>
           <div className="max-w-md">
             <Input
               type="text"
@@ -165,7 +167,7 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
 
         {/* Profile Picture */}
        <div className="space-y-3">
-  <label className="text-sm font-medium text-gray-900">Profile Picture</label>
+  <label className="text-md font-medium text-gray-700">Profile Picture</label>
   <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
     <div className="flex flex-col items-center">
 
@@ -207,7 +209,7 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
 
         {/* Description */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Description*</label>
+          <label className="text-md font-medium text-gray-700">Description*</label>
           <Textarea
             placeholder="Tell us about yourself, your experience, and what makes you unique..."
             value={localData.description}
@@ -223,7 +225,7 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
 
         {/* Languages */}
         <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-900">Languages*</label>
+          <label className="text-md font-medium text-gray-700">Languages*</label>
           <p className="text-sm text-gray-500 mb-4">
             Select which languages you can communicate in and your proficiency level.
           </p>
@@ -237,14 +239,14 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
                     onChange={() => toggleLanguage(language)}
                     className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
-                  <span className="text-sm text-gray-700">{language}</span>
+                  <span className="text-md text-gray-700">{language}</span>
                 </label>
               ))}
             </div>
           </div>
           {selectedLanguages.length > 0 && (
             <div className="mt-3">
-              <p className="text-sm text-gray-600 mb-2">Selected languages:</p>
+              <p className="text-md text-gray-600 mb-2">Selected languages:</p>
               <div className="flex flex-wrap gap-2">
                 {selectedLanguages.map((language) => (
                   <span
@@ -260,13 +262,14 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
         </div>
 
         {/* Submit button */}
-        <div className="flex justify-end pt-8 border-t border-gray-200">
-          <Button
-            type="submit"
-            className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
-          >
-            Continue
-          </Button>
+        <div className="flex flex-row justify-end pt-8 border-t border-gray-200">
+          {/* <ResponsiveButton  type="submit" variant="gradient" size="lg" className="flex flex-row"   >
+                    Continue
+                    <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" />
+                  </ResponsiveButton> */}
+                   <ResponsiveButton  variant="gradient" icon={<ArrowRight size={16} />} iconPosition="right">
+                                Continue
+                              </ResponsiveButton>
         </div>
       </form>
     </div>

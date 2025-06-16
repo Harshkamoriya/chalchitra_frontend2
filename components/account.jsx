@@ -96,12 +96,12 @@ const verifyCode = async (type) => {
 
 
   return (
-    <div className="p-12">
+    <div className="lg:px-12">
       {/* Header section */}
-      <div className="mb-12">
+      <div className="mb-12 ">
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-semibold text-gray-900 mb-4">Account Security</h1>
+            <h1 className="text-3xl font-semibold text-gray-700 mb-4">Account Security</h1>
             <p className="text-gray-600 max-w-2xl leading-relaxed">
               Secure your account with verified contact information and complete your professional setup.
             </p>
@@ -115,7 +115,7 @@ const verifyCode = async (type) => {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Phone Number */}
         <div className="space-y-4">
-          <label className="text-sm font-medium text-gray-900">Phone Number*</label>
+          <label className="text-md font-medium text-gray-700">Phone Number*</label>
           <div className="flex space-x-3">
             <Input
               type="tel"
@@ -172,7 +172,7 @@ const verifyCode = async (type) => {
 
         {/* Email */}
         <div className="space-y-4">
-          <label className="text-sm font-medium text-gray-900">Email Address*</label>
+          <label className="text-md font-medium text-gray-700">Email Address*</label>
           <div className="flex space-x-3">
             <Input
               type="email"

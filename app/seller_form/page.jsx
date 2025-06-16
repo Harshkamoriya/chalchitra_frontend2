@@ -49,10 +49,12 @@ const Page = () => {
             {/* Call to action button */}
             <div className="mt-10">
            <Link href="/seller_form/tips">
-              <button className="bg-green-600 cursor-pointer text-white px-8 py-4 rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full sm:w-auto flex items-center justify-center">
-                Become a Video Editor
-                <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              <button className="group relative inline-flex items-center justify-center px-8 py-4 rounded-xl font-medium text-lg w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer ">
+  <span className="absolute inset-0 rounded-xl p-[2px] bg-gradient-to-r from-purple-600 to-pink-600 -z-10"></span>
+  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+    Become a Video Editor
+  </span>
+</button>
            
            </Link>
             </div>
@@ -148,10 +150,22 @@ const Page = () => {
             {/* Call to action button */}
             <div className="mt-10 lg:hidden">
              <Link href="/seller_form/tips"
-             > <button className="bg-green-600 cursor-pointer text-white px-8 py-4 rounded-xl font-medium text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full sm:w-auto flex items-center justify-center">
-                Become a Video Editor
-                <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </button></Link>
+             >
+              {/* <button className="text-center border-purple-400 border-3 p-4">
+ <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200">
+                    Become a Video Editor
+                  </p>              </button> */}
+       <button className="group relative inline-flex items-center justify-center px-8 py-4 rounded-xl font-medium text-lg w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer ">
+  <span className="absolute inset-0 rounded-xl p-[2px] bg-gradient-to-r from-purple-600 to-pink-600 -z-10"></span>
+  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+    Become a Video Editor
+  </span>
+  {/* <ChevronRight className="ml-2 h-5 w-5 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent group-hover:translate-x-1 transition-transform" /> */}
+</button>
+
+
+              
+              </Link>
 
             </div>
           </div>

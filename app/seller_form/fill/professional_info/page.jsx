@@ -13,7 +13,7 @@ export  function page () {
 
 
   return (
-    <div>
+    <div className="lg:p-12 p-2">
         {/* Header with step indicator and completion rate */}
              
       <ProfessionalDetails formData={formData} updateFormData={updateFormData} />
