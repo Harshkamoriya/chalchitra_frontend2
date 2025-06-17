@@ -121,13 +121,13 @@ const Footer = () => {
               <p className="text-gray-600 mb-4 text-md">
                 Get the latest updates on new features and video editing trends.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col md:flex-row gap-2">
                 <input
                   type="email"
                   placeholder="Enter your email"
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
                 />
-                <button className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
+                <button className="px-6 py-2 bg-gradient-to-r from-pink-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
                   Subscribe
                 </button>
               </div>

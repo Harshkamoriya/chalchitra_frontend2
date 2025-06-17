@@ -4,6 +4,8 @@ import { useState } from "react"
 import { CheckCircle, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useSession } from "next-auth/react"
+
 
 // Clean Account Details component
 export default function AccountDetails({ formData, updateFormData, prevStep }) {
@@ -25,6 +27,12 @@ export default function AccountDetails({ formData, updateFormData, prevStep }) {
     setLocalData(newData)
     updateFormData(newData)
   }
+
+  const {data: session} = useSession();
+  console.log(session)
+  const username = session?.user?.name
+  console.log(username , "username");
+
 //send verification code
   const sendVerificationCode = async (type) => {
   const identifier = type === "phone" ? localData.phoneNumber : localData.email
@@ -246,12 +254,14 @@ const verifyCode = async (type) => {
           >
             Previous
           </Button>
+         <Link href="/users/">
           <Button
             type="submit"
             className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
           >
             Complete Setup
           </Button>
+         </Link>
         </div>
       </form>
     </div>
