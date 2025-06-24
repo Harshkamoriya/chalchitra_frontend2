@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+// ✅ Fiverr-Style Auth Modal (No NextAuth)
+
+import React, { useState, useEffect } from 'react';
 import { FaGithub } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { toast } from 'react-toastify';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Pacifico } from 'next/font/google';
-import Loader from './Loader'; // ✅ import Loader
+import Loader from './Loader';
 
 const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: "400",
+  subsets: ['latin'],
+  weight: '400',
 });
 
 const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
@@ -19,7 +21,8 @@ const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [loading, setLoading] = useState(false); // ✅ loader state
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   if (!isOpen) return null;
 
@@ -49,76 +52,101 @@ const Auth_modal = ({ isOpen, onClose, defaultMode }) => {
   const handleonsubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
-    setLoading(true); // ✅ start loading
+    setLoading(true);
 
     try {
-      if (authMode === "signup") {
-        const res = await fetch("/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+      if (authMode === 'signup') {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),
         });
 
         const data = await res.json();
         if (!res.ok) {
-          toast.error(data.error || "Signup failed");
-          setLoading(false);
+          toast.error(data.error || 'Signup failed');
           return;
         }
 
-        toast.success("Signup successful. Logging you in...");
-        const result = await signIn("credentials", {
-          redirect: false,
-          email,
-          password,
+        toast.success('Signup successful. Logging you in...');
+
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
 
-        if (result?.ok || result?.status === 200) {
-          toast.success("Login successful");
+        const loginData = await loginRes.json();
+        if (loginRes.ok) {
+          sessionStorage.setItem('accessToken', loginData.accessToken);
+          toast.success('Login successful');
           onClose?.();
+          router.push(loginData.redirect || '/');
         } else {
-          toast.error("Auto-login failed after signup");
+          toast.error('Login after signup failed');
         }
-
       } else {
-        const result = await signIn("credentials", {
-          redirect: false,
-          email,
-          password,
+        const loginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
 
-        if (result?.ok || result?.status === 200) {
-          toast.success("Login successful");
+        const loginData = await loginRes.json();
+        if (loginRes.ok) {
+          sessionStorage.setItem('accessToken', loginData.accessToken);
+          toast.success('Login successful');
           onClose?.();
+          router.push(loginData.redirect || '/');
         } else {
-          toast.error("Invalid email or password");
+          toast.error('Invalid email or password');
         }
       }
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong");
+      toast.error('Something went wrong');
     } finally {
-      setLoading(false); // ✅ stop loading
+      setLoading(false);
     }
   };
 
-  const handleSignin = async (e, provider) => {
-    e.preventDefault();
-    setLoading(true); // ✅ start loading
-    try {
-await signIn(provider, { callbackUrl: `/?signin=${provider}` });
-    } catch (error) {
-      console.error(error);
-      toast.error(`Sign in with ${provider} failed`);
-    } finally {
-      setLoading(false); // ✅ stop loading
+const handleOAuthLogin = (provider) => {
+  setLoading(true);
+  try {
+    const currentUrl = window.location.href; // 👈 Store current page
+    const encodedFrom = encodeURIComponent(currentUrl); // encode it
+
+    if (provider === "google") {
+      const redirect_uri = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ;
+      const client_id = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      const scope = "email profile";
+
+      const auth_url = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}&prompt=consent&state=${encodeURIComponent(window.location.href)}`;
+
+      window.location.href = auth_url;
+
+    } else if (provider === "github") {
+      const redirect_uri = process.env.NEXT_PUBLIC_GITHUB_REDIRECT_URI
+      const client_id = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+      const scope = "user:email";
+
+      const auth_url = `https://github.com/login/oauth/authorize?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=${encodeURIComponent(scope)}`;
+
+      window.location.href = auth_url;
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+    toast.error(`Sign in with ${provider} failed`);
+    setLoading(false);
+  }
+};
+
+
 
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/30 backdrop-blur-sm">
-      {loading && <Loader />} {/* ✅ Loader here */}
+      {loading && <Loader />}
       <div className="bg-white rounded-md p-6 w-full max-w-md shadow-lg relative z-10">
         <div className="flex justify-between items-center mb-4">
           <Button
@@ -130,7 +158,10 @@ await signIn(provider, { callbackUrl: `/?signin=${provider}` });
         </div>
 
         <h2 className="text-xl sm:text-2xl md:text-3xl text-purple-600 font-bold text-center mb-4">
-          <span className={cn("text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600", pacifico.className)}>
+          <span className={cn(
+            'text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600',
+            pacifico.className
+          )}>
             Welcome Back let's get started!
           </span>
         </h2>
@@ -169,16 +200,16 @@ await signIn(provider, { callbackUrl: `/?signin=${provider}` });
         </form>
 
         <div className="flex justify-center mt-4 gap-4">
-          <button onClick={(e) => handleSignin(e, 'google')} className="flex items-center gap-2 border p-2 rounded">
+          <button onClick={() => handleOAuthLogin('google')} className="flex items-center gap-2 border p-2 rounded">
             <FcGoogle /> Continue with Google
           </button>
-          <button onClick={(e) => handleSignin(e, 'github')} className="flex items-center gap-2 border p-2 rounded">
+          <button onClick={() => handleOAuthLogin('github')} className="flex items-center gap-2 border p-2 rounded">
             <FaGithub /> Continue with GitHub
           </button>
         </div>
 
         <p className="mt-4 text-center text-sm text-gray-600">
-          {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+          {authMode === 'signin' ? "Don't have an account?" : 'Already have an account?'}
           <span
             className="text-blue-500 cursor-pointer ml-1"
             onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}

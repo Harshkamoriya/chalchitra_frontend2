@@ -4,20 +4,17 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/lib/authOptions";
 import User from "@/models/user";
 import { connectToDB } from "@/lib/db";
+import { verifyAccessToken } from "@/lib/jwt";
+
 
 export async function POST(req) {
-  const session = await getServerSession(authOptions);
 
-  if (!session || !session.user?.email) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
 
   await connectToDB();
 
   try {
     const body = await req.json();
     console.log(body);
-    console.log(session , "session")
 
     const {
       firstName,
@@ -32,7 +29,7 @@ export async function POST(req) {
     // const name = firstName + " "+ lastName;
 
     const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
+      {id},
       {
         $set: {
           name:`${firstName}${lastName}`,
@@ -40,6 +37,7 @@ export async function POST(req) {
           profileImage,
           description,
           languages,
+          isSeller:true,
           role:"seller"
         },
       },

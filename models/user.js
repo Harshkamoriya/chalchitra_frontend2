@@ -7,12 +7,13 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   image: { type: String },
 
-  password: {
-    type: String,
-    required: function () {
-      return this.provider === "credentials";
+     password: {
+      type: String,
+      required: function () {
+        // Required only if the user is not a Google user
+        return !this.googleId;
+      },
     },
-  },
 
   provider: {
     type: String,
@@ -20,13 +21,27 @@ const UserSchema = new mongoose.Schema({
     default: "credentials",
   },
 
+googleId: {
+  type: String,
+  unique: true,
+  sparse: true, // allows null values to skip uniqueness when not present
+},
+githubId: {
+  type: String,
+  unique: true,
+  sparse: true, // allows null values to skip uniqueness when not present
+},
+
   role: {
     type: String,
-    enum: ["user", "admin"],
-    default: "user",
+    enum: ["buyer", "seller", "admin"],
+    default: "buyer",
   },
 
+
+
   isSeller: { type: Boolean, default: false },
+  isbuyer:{type:Boolean , default:true},
   sellerLevel: {
     type: String,
     enum: ["new", "level_1", "level_2", "top_rated"],
@@ -69,12 +84,22 @@ const UserSchema = new mongoose.Schema({
     website: { type: String },
   },
 
-  phoneVerification: {
-    phoneNumber: String,
-    isVerified: { type: Boolean, default: false },
-  },
 
-  isVerified: { type: Boolean, default: false }, // Email verified
+
+phoneNumber: {
+  type: String,
+  required: function () {
+    return !this.googleId; // only required if not a Google user
+  },
+  unique: true,
+  match: [
+    /^\+[1-9]\d{7,14}$/,
+    "Phone number must be in valid international format (E.164)",
+  ],
+},
+
+  phoneVerified:{type:Boolean , default:false},
+  emailVerified: { type: Boolean, default: false }, // Email verified
 
   completedOrders: { type: Number, default: 0 },
 
@@ -84,7 +109,8 @@ const UserSchema = new mongoose.Schema({
   },
 
   createdAt: { type: Date, default: Date.now },
-});
+  
+},{ timestamps: true });
 
 // ✅ Full-text index for better search
 UserSchema.index({ name: "text", skills: "text", description: "text" });

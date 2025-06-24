@@ -5,6 +5,8 @@ import { CheckCircle, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useSession } from "next-auth/react"
+import { toast } from "react-toastify"
+import Link from "next/link"
 
 
 // Clean Account Details component
@@ -69,6 +71,7 @@ const verifyCode = async (type) => {
     if (!res.ok) throw new Error(data.message || "Verification failed")
 
     handleChange(`${type}Verified`, true)
+    toast.success(`${type} verified successfully`)
     alert(`${type} verified successfully!`)
   } catch (err) {
     alert(err.message)
@@ -92,12 +95,34 @@ const verifyCode = async (type) => {
   // }
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
+     if (!localData.phoneVerified || !localData.emailVerified ) {
+    alert("Please verify both phone and email before proceeding.");
+    return;
+  }
     try {
-      
+       const res = await fetch("/api/user/verify-status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        phoneNumber,
+        phoneVerified: true,
+        emailVerified: true,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to update verification status");
+
+    // Redirect after success
+
+    router.push("/users/harshkamoriya/handle_gigs/create_gig");
     } catch (error) {
-      
+       console.error(error);
+       toast.error("something went wrong")
     }
 
   }
@@ -254,14 +279,12 @@ const verifyCode = async (type) => {
           >
             Previous
           </Button>
-         <Link href="/users/">
-          <Button
+        <Button
             type="submit"
             className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200"
           >
             Complete Setup
           </Button>
-         </Link>
         </div>
       </form>
     </div>

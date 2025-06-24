@@ -1,10 +1,11 @@
-"use client";
-
+"use client"
 import { useEffect, useState } from "react";
-import { Pacifico } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import Cookies from "js-cookie";
+import TopNavbar from "./topnavbar";
+import UserProfileDropdown from "./userProfile/profile_dropdown";
 import {
   Search,
   Menu,
@@ -14,12 +15,20 @@ import {
   Heart,
   Home,
   Info,
-  Video,
   LogOut,
+  User,
+  Users,
+  Settings,
+  CreditCard,
+  Globe,
+  DollarSign,
+  Star,
+  UserCheck,
+  ChevronDown,
+  ChevronRight,
+  Cookie,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AuthModal } from "./AuthModal";
-import { useSession, signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,43 +36,44 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Auth_modal from "./Auth_modal";
 import Link from "next/link";
+import { useAuth } from "@/app/(nav2)/context/AuthContext";
 
-const pacifico = Pacifico({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-pacifico",
-});
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [onClose, setOnClose] = useState(() => () => setShowAuthModal(false));
   const [authMode, setAuthMode] = useState("signin");
-  const { data: session, status } = useSession();
+  const [showMobileProfile, setShowMobileProfile] = useState(false);
+  const { user, logout } = useAuth();
+  const [prevUser, setPrevUser] = useState(null);
 
   useEffect(() => {
-    // console.log(data , "session data")
-    console.log("session  ", session);
-  }, [session]);
+    if (user && !prevUser) {
+      setShowAuthModal(false);
+    }
+    setPrevUser(user);
+  }, [user, prevUser]);
 
-  // Mock notification data - replace with real data
+  console.log("user",user)
+  console.log(prevUser,"prevUser");
+
+ 
+
   const mockNotifications = 3;
   const mockMessages = 2;
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    setShowMobileProfile(false); // Reset profile view when closing menu
   };
 
   const handleAuthClick = (mode) => {
     setAuthMode(mode);
     setShowAuthModal(true);
     setIsMobileMenuOpen(false);
-  };
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" });
   };
 
   const getInitials = (name) => {
@@ -74,31 +84,52 @@ const Navbar = () => {
       .toUpperCase();
   };
 
-  const isLoggedIn = status === "authenticated" && session;
-  console.log(isLoggedIn, "isloggedin ");
-  return (
-    <>
+  const handleMobileProfileToggle = () => {
+    setShowMobileProfile(!showMobileProfile);
+  };
+
+  const handleMobileNavigation = (path) => {
+    console.log(`Navigating to ${path}`);
+    setIsMobileMenuOpen(false);
+    setShowMobileProfile(false);
+  };
+
+  const handleMobileSwitchToBuying = () => {
+    console.log("Switched to buyer mode");
+    setIsMobileMenuOpen(false);
+    setShowMobileProfile(false);
+  };
+
+  const handleMobileLogout = () => {
+    logout();
+    setIsMobileMenuOpen(false);
+    setShowMobileProfile(false);
+  };
+
+  console.log(user, "user");
+
+  const isLoggedIn = !!user;
+
+  // const role = Cookies.get("currentRole"); // ✅ Correct usage
+
+  // if(role === "seller"){
+  //   return <TopNavbar/>
+  // }
+
+  return(
+  <>
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-          <div className="flex items-center flex-nowrap">
-  {/* Logo Image */}
-  <img
-    src="/logo.jpg"
-    alt="logo"
-    className="w-12 h-12 rounded-full object-cover"
-  />
+            <div className="flex items-center flex-nowrap">
+              <img
+                src="/logo.jpg"
+                alt="logo"
+                className="w-12 h-12 rounded-full object-cover"
+              />
+              <span className="text-3xl font-extrabold text-gray-600"></span>
+            </div>
 
-  {/* Brand Name */}
-  <span className="text-3xl font-extrabold text-gray-600">
-    {/* ChalChitra */}
-    
-  </span>
-</div>
-
-
-            {/* Desktop Search Bar */}
             <div className="hidden md:block flex-1 max-w-2xl mx-8">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -110,13 +141,6 @@ const Navbar = () => {
               </div>
             </div>
 
-            {/* <div className="seller flex text-center items-center">
-              <Link href="/become-a-seller">
-                <p className="text-gray-700">become a seller</p>
-              </Link>
-            </div> */}
-
-            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
               <div className="cursor-pointer px-3 py-1 rounded-md transition-colors group">
                 <Link href="/become_seller">
@@ -127,7 +151,6 @@ const Navbar = () => {
               </div>
 
               {!isLoggedIn ? (
-                // Not logged in state
                 <>
                   <a
                     href="/about"
@@ -150,7 +173,6 @@ const Navbar = () => {
                   </Button>
                 </>
               ) : (
-                // Logged in state
                 <>
                   <div className="relative">
                     <Bell className="h-6 w-6 text-gray-600 hover:text-purple-600 cursor-pointer transition-colors" />
@@ -180,47 +202,25 @@ const Navbar = () => {
                     </Link>
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div className="flex items-center cursor-pointer">
-                        {session?.user?.image ? (
-                          <img
-                            src={session.user.image || "/1a.jpg"}
-                            alt="Profile"
-                            className="h-8 w-8 rounded-full border-2 border-gray-300"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white text-sm font-medium">
-                            {getInitials(session?.user?.name || "User")}
-                          </div>
-                        )}
-                      </div>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <div className="flex items-center justify-start gap-2 p-2">
-                        <div className="flex flex-col space-y-1 leading-none">
-                          <p className="font-medium">{session?.user?.name}</p>
-                          <p className="w-[200px] truncate text-sm text-muted-foreground">
-                            {session?.user?.email}
-                          </p>
-                        </div>
-                      </div>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Settings</DropdownMenuItem>
-                      <DropdownMenuItem>Billing</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleSignOut}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Log out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  {/* Desktop Profile Dropdown */}
+                  <UserProfileDropdown
+                    userData={{
+                      name: user?.name || "User",
+                      email: user?.email || "",
+                      role:user?.role||"buyer",
+                      avatar: user?.avatar || "/placeholder.svg",
+                      level: user?.level || "Level 1",
+                      rating: user?.rating || 5,
+                    }}
+                    onSwitchToBuying={() => {
+                      console.log("Switched to buyer mode");
+                    }}
+                    onLogout={logout}
+                  />
                 </>
               )}
             </div>
 
-            {/* Mobile menu button */}
             <div className="md:hidden">
               <Button
                 variant="ghost"
@@ -237,7 +237,6 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile Search Bar */}
           <div className="md:hidden pb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -255,7 +254,6 @@ const Navbar = () => {
           <div className="md:hidden border-t border-gray-200 bg-white">
             <div className="px-4 py-4 space-y-4">
               {!isLoggedIn ? (
-                // Not logged in mobile menu
                 <>
                   <a
                     href="/"
@@ -288,59 +286,199 @@ const Navbar = () => {
                   </div>
                 </>
               ) : (
-                // Logged in mobile menu
                 <>
-                  <div className="flex items-center space-x-3 py-2">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-medium">
-                      {getInitials(session?.user?.name || "User")}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {session?.user?.name}
-                      </p>
-                      <p className="text-sm text-gray-500">View Profile</p>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center space-x-3">
-                        <Bell className="h-5 w-5 text-gray-600" />
-                        <span className="text-gray-700">Notifications</span>
+                  {/* Mobile Profile Section */}
+                  {!showMobileProfile ? (
+                    <>
+                      {/* Profile Header - Clickable */}
+                      <div 
+                        className="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+                        onClick={handleMobileProfileToggle}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-10 w-10 border-2 border-gray-200 shadow-sm">
+                            <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                            <AvatarFallback className="bg-gray-700 text-white font-medium">
+                              {getInitials(user?.name || "User")}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {user?.name}
+                            </p>
+                            <p className="text-sm text-gray-500">View Profile</p>
+                          </div>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
                       </div>
-                      {mockNotifications > 0 && (
-                        <Badge className="bg-red-500 text-white">
-                          {mockNotifications}
-                        </Badge>
-                      )}
-                    </div>
 
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center space-x-3">
-                        <MessageCircle className="h-5 w-5 text-gray-600" />
-                        <span className="text-gray-700">Messages</span>
+                      {/* Quick Actions */}
+                      <div className="border-t border-gray-200 pt-4 space-y-3">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-3">
+                            <Bell className="h-5 w-5 text-gray-600" />
+                            <span className="text-gray-700">Notifications</span>
+                          </div>
+                          {mockNotifications > 0 && (
+                            <Badge className="bg-red-500 text-white">
+                              {mockNotifications}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center space-x-3">
+                            <MessageCircle className="h-5 w-5 text-gray-600" />
+                            <span className="text-gray-700">Messages</span>
+                          </div>
+                          {mockMessages > 0 && (
+                            <Badge className="bg-red-500 text-white">
+                              {mockMessages}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center space-x-3 py-2">
+                          <Heart className="h-5 w-5 text-gray-600" />
+                          <span className="text-gray-700">Favorites</span>
+                        </div>
+
+                        <Link href="/become_seller" className="flex items-center space-x-3 py-2 text-gray-700 hover:text-purple-600 transition-colors">
+                          <Users className="h-5 w-5" />
+                          <span>Become a Seller</span>
+                        </Link>
+
+                        <Link href="/earning-mode" className="flex items-center space-x-3 py-2 text-gray-700 hover:text-purple-600 transition-colors">
+                          <DollarSign className="h-5 w-5" />
+                          <span>Start Earning</span>
+                        </Link>
                       </div>
-                      {mockMessages > 0 && (
-                        <Badge className="bg-red-500 text-white">
-                          {mockMessages}
-                        </Badge>
-                      )}
-                    </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Mobile Profile Dropdown Content */}
+                      <div className="space-y-4">
+                        {/* Back Button */}
+                        <div 
+                          className="flex items-center space-x-3 py-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors"
+                          onClick={handleMobileProfileToggle}
+                        >
+                          <ChevronDown className="h-5 w-5 text-gray-600 transform rotate-90" />
+                          <span className="text-gray-700 font-medium">Back</span>
+                        </div>
 
-                    <div className="flex items-center space-x-3 py-2">
-                      <Heart className="h-5 w-5 text-gray-600" />
-                      <span className="text-gray-700">Favorites</span>
-                    </div>
+                        {/* Profile Header */}
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-12 w-12 border-2 border-gray-200 shadow-sm">
+                              <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+                              <AvatarFallback className="bg-gray-700 text-white font-semibold">
+                                {getInitials(user?.name || "User")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate text-base text-gray-900">{user?.name}</p>
+                              <p className="text-sm text-gray-600 truncate">{user?.email}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 border-gray-200">
+                                  {user?.level || "Level 1"}
+                                </Badge>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-xs font-medium text-gray-700">{user?.rating || 5}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                    <Button
-                      variant="outline"
-                      className="w-full mt-4"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </Button>
-                  </div>
+                        {/* Switch to Buying Button */}
+                        <Button 
+                          onClick={handleMobileSwitchToBuying}
+                          className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 rounded-lg shadow-sm transition-all duration-200"
+                        >
+                          <UserCheck className="h-4 w-4 mr-2" />
+                          Switch to Buying
+                        </Button>
+
+                        {/* Menu Items */}
+                        <div className="space-y-2">
+                          <div 
+                            className="flex items-center gap-3 py-3 px-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => handleMobileNavigation('/profile')}
+                          >
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <User className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">Profile</span>
+                          </div>
+
+                          <div 
+                            className="flex items-center gap-3 py-3 px-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => handleMobileNavigation('/refer')}
+                          >
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <Users className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">Refer a friend</span>
+                          </div>
+
+                          <div 
+                            className="flex items-center gap-3 py-3 px-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => handleMobileNavigation('/settings')}
+                          >
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <Settings className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">Settings</span>
+                          </div>
+
+                          <div 
+                            className="flex items-center gap-3 py-3 px-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                            onClick={() => handleMobileNavigation('/billing')}
+                          >
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <CreditCard className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-gray-900">Billing and payments</span>
+                          </div>
+                        </div>
+
+                        {/* Language and Currency */}
+                        <div className="border-t border-gray-200 pt-4 space-y-2">
+                          <div className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="p-1.5 bg-gray-100 rounded-lg">
+                                <Globe className="h-4 w-4 text-gray-600" />
+                              </div>
+                              <span className="font-medium text-sm text-gray-900">English</span>
+                            </div>
+                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                          </div>
+
+                          <div className="flex items-center gap-3 py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer transition-colors">
+                            <div className="p-1.5 bg-gray-100 rounded-lg">
+                              <DollarSign className="h-4 w-4 text-gray-600" />
+                            </div>
+                            <span className="font-medium text-sm text-gray-900">USD</span>
+                          </div>
+                        </div>
+
+                        {/* Logout */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <div 
+                            className="flex items-center gap-3 py-3 px-3 hover:bg-red-50 rounded-lg cursor-pointer transition-colors text-red-600"
+                            onClick={handleMobileLogout}
+                          >
+                            <div className="p-1.5 bg-red-50 rounded-lg">
+                              <LogOut className="h-4 w-4 text-red-600" />
+                            </div>
+                            <span className="font-medium">Logout</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -348,14 +486,14 @@ const Navbar = () => {
         )}
       </nav>
 
-      {/* Auth Modal */}
       <Auth_modal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         defaultMode={authMode}
       />
     </>
-  );
+
+    )
 };
 
 export default Navbar;
