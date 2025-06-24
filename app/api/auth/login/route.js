@@ -1,7 +1,6 @@
 import { connectToDB } from "@/lib/db";
 import User from "@/models/user";
-
-import { bcrypt } from "bcryptjs";
+import bcrypt from "bcrypt"; 
 import { generateTokens } from "@/lib/jwt";
 
 export async function POST(req) {
