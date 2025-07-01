@@ -9,7 +9,6 @@ import { Providers } from "@/providers/sessionProvider";
 import { useUserContext } from "./context/UserContext";
 import { UserProvider } from "./context/UserContext";
 import { AuthProvider } from "./context/AuthContext";
-import InterceptorProvider from "@/providers/interceptorProvider";
 
 
 const outfit = Outfit({ subsets: ["latin"], weight: ["300", "400", "500"] });
@@ -29,11 +28,9 @@ export default function RootLayout({ children }) {
           <AppContextProvider>
             <UserProvider>   
               <AuthProvider>  
-                <InterceptorProvider>   
                 <Navbar />
                
           {children}
-          </InterceptorProvider>
           <Footer />
            </AuthProvider>
           </UserProvider>
