@@ -1,13 +1,16 @@
 import mongoose from "mongoose";
 
-const UserSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  displayName: { type: String }, // Optional: Public display name
+const UserSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    firstname:{type:String ,required:true},
+    lastname:{type:String ,required:true},
+    displayName: { type: String }, // Optional: Public display name
 
-  email: { type: String, required: true, unique: true },
-  image: { type: String },
+    email: { type: String, required: true, unique: true },
+    image: { type: String },
 
-     password: {
+    password: {
       type: String,
       required: function () {
         // Required only if the user is not a Google user
@@ -15,102 +18,99 @@ const UserSchema = new mongoose.Schema({
       },
     },
 
-  provider: {
-    type: String,
-    enum: ["credentials", "google", "github"],
-    default: "credentials",
-  },
-
-googleId: {
-  type: String,
-  unique: true,
-  sparse: true, // allows null values to skip uniqueness when not present
-},
-githubId: {
-  type: String,
-  unique: true,
-  sparse: true, // allows null values to skip uniqueness when not present
-},
-
-  role: {
-    type: String,
-    enum: ["buyer", "seller", "admin"],
-    default: "buyer",
-  },
-
-
-
-  isSeller: { type: Boolean, default: false },
-  isbuyer:{type:Boolean , default:true},
-  sellerLevel: {
-    type: String,
-    enum: ["new", "level_1", "level_2", "top_rated"],
-    default: "new",
-  },
-
-  description: { type: String, maxlength: 1000 },
-  country: { type: String },
-  languages: [{ type: String }],
-  skills: [{ type: String }],
-
-  occupation: { type: String },
-
-  education: [
-    {
-      school: String,
-      degree: String,
-      field: String,
-      from: Date,
-      to: Date,
-      description: String,
+    provider: {
+      type: String,
+      enum: ["credentials", "google", "github"],
+      default: "credentials",
     },
-  ],
 
-  certifications: [
-    {
-      name: String,
-      issuer: String,
-      date: Date,
-      link: String,
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, // allows null values to skip uniqueness when not present
     },
-  ],
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true, // allows null values to skip uniqueness when not present
+    },
 
-  portfolio: [{ type: String }],
+    role: {
+      type: String,
+      enum: ["buyer", "seller", "admin"],
+      default: "buyer",
+    },
 
-  socialLinks: {
-    linkedin: { type: String },
-    twitter: { type: String },
-    github: { type: String },
-    website: { type: String },
+    isSeller: { type: Boolean, default: false },
+    isbuyer: { type: Boolean, default: true },
+    sellerLevel: {
+      type: String,
+      enum: ["new", "level_1", "level_2", "top_rated"],
+      default: "new",
+    },
+
+    description: { type: String, maxlength: 1000 },
+    country: { type: String },
+    languages: [{ type: String }],
+    skills: [{ type: String }],
+
+    occupation: { type: String },
+
+    education: [
+      {
+        school: String,
+        degree: String,
+        field: String,
+        from: Date,
+        to: Date,
+        description: String,
+      },
+    ],
+
+    certifications: [
+      {
+        name: String,
+        issuer: String,
+        date: Date,
+        link: String,
+      },
+    ],
+
+    portfolio: [{ type: String }],
+
+    socialLinks: {
+      linkedin: { type: String },
+      twitter: { type: String },
+      github: { type: String },
+      website: { type: String },
+    },
+
+    phoneNumber: {
+      type: String,
+      required: function () {
+        return !this.googleId; // only required if not a Google user
+      },
+      unique: true,
+      match: [
+        /^\+[1-9]\d{7,14}$/,
+        "Phone number must be in valid international format (E.164)",
+      ],
+    },
+
+    phoneVerified: { type: Boolean, default: false },
+    emailVerified: { type: Boolean, default: false }, // Email verified
+
+    completedOrders: { type: Number, default: 0 },
+
+    rating: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 },
+    },
+
+    createdAt: { type: Date, default: Date.now },
   },
-
-
-
-phoneNumber: {
-  type: String,
-  required: function () {
-    return !this.googleId; // only required if not a Google user
-  },
-  unique: true,
-  match: [
-    /^\+[1-9]\d{7,14}$/,
-    "Phone number must be in valid international format (E.164)",
-  ],
-},
-
-  phoneVerified:{type:Boolean , default:false},
-  emailVerified: { type: Boolean, default: false }, // Email verified
-
-  completedOrders: { type: Number, default: 0 },
-
-  rating: {
-    average: { type: Number, default: 0 },
-    count: { type: Number, default: 0 },
-  },
-
-  createdAt: { type: Date, default: Date.now },
-  
-},{ timestamps: true });
+  { timestamps: true }
+);
 
 // ✅ Full-text index for better search
 UserSchema.index({ name: "text", skills: "text", description: "text" });

@@ -11,6 +11,7 @@ import ResponsiveButton from "./responsive-button"
 import { Textarea } from "@/components/ui/textarea"
 import { CalendarDays, Trash2 } from "lucide-react"
 import BackButton from "./BackBtn"
+import { useEffect } from "react"
 
 
 export default function ProfessionalDetails({ formData, updateFormData }) {
@@ -67,16 +68,53 @@ const updateEducationField = (index, field, value) => {
   handleChange("education", updated)
 }
 
+// this is for fetching the already present data
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const token = sessionStorage.getItem("accessToken");
+      const res = await axios.get("/api/user/professional_info", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
 
+      if (res.data.success) {
+        const data = res.data.user;
+
+        const newData = {
+          occupation: data.occupation || "",
+          skills: data.skills || [],
+          education: data.education || [],
+          certifications: data.certifications || [],
+          website: data.website || "",
+        };
+
+        setLocalData(newData);
+        updateFormData(newData);
+      } else {
+        console.error("Failed to fetch professional info:", res.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching professional info:", error);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+// function for  submiiting the data 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token =sessionStorage.getItem("accessToken");
     console.log("in the handleSubmit function")
 
     try {
       console.log(localData  , " local data to be send from the frontend")
-      const res = await axios.post("/api/user/professional_info", localData, {
-        headers: { "Content-Type": "application/json" },
+      const res = await axios.patch("/api/user/professional_info", localData, {
+        headers: { "Content-Type": "application/json",
+          "Authorization":`Bearer ${token}`
+         },
       })
 
       if (res.status !== 200) {

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import axios from "axios"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   DropdownMenu,
@@ -180,36 +182,43 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("urgent")
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("dueDate")
+  const [orders, setOrders] = useState([]);
+  const [loading , setLoading] = useState(false);
+  const [page ,setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+const limit = 10; // items per page
 
   const filteredOrders = useMemo(() => {
-    let filtered = mockOrders
+    let filtered = [...orders]
 
     // Filter by tab
     switch (activeTab) {
-      case "urgent":
+      case "starred":
         filtered = filtered.filter((order) => order.status === "urgent")
         break
       case "active":
         filtered = filtered.filter((order) => ["in-progress", "pending"].includes(order.status))
         break
-      case "overdue":
-        filtered = filtered.filter((order) => order.status === "overdue")
-        break
-      case "delivered":
-        filtered = filtered.filter((order) => order.status === "delivered")
-        break
-      case "completed":
-        filtered = filtered.filter((order) => order.status === "completed")
-        break
-      case "cancelled":
-        filtered = filtered.filter((order) => order.status === "cancelled")
-        break
-      case "starred":
-        filtered = filtered.filter((order) => order.isStarred)
-        break
+      // case "overdue":
+      //   filtered = filtered.filter((order) => order.status === "overdue")
+      //   break
+      // case "delivered":
+      //   filtered = filtered.filter((order) => order.status === "delivered")
+      //   break
+      // case "completed":
+      //   filtered = filtered.filter((order) => order.status === "completed")
+      //   break
+      // case "cancelled":
+      //   filtered = filtered.filter((order) => order.status === "cancelled")
+      //   break
+      // case "starred":
+      //   filtered = filtered.filter((order) => order.isStarred)
+      //   break
       default:
         break
     }
+
+
 
     // Filter by search query
     if (searchQuery) {
@@ -235,6 +244,43 @@ export default function OrdersPage() {
 
     return filtered
   }, [activeTab, searchQuery, sortBy])
+
+  useEffect(()=>{
+    const fetchOrders = async ()=>{
+
+      try {
+        const token = sessionStorage.getItem("accessToken");
+        if(!token){
+          console.log("No access token found ")
+        }
+        setLoading(true);
+        const res = await axios.get(`/api/user/orders?role=seller&status=${activeTab}&page=${page}&limit=${limit}`,
+          {headers:{
+            "Authorization": `Bearer ${token}`
+          }}
+        );
+        const data  = res.data;
+        if(data.success){
+          setOrders(data.orders);
+            setTotalPages(data.pagination.pages || 1);
+
+          setLoading(false);
+        }else{
+          console.error("failed to fetch orders ", data.message);
+          setOrders([]);
+          setTotalPages(1);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error.message)
+          setOrders([])
+          setTotalPages(1);
+      }finally{
+        setLoading(false);
+      }
+    }
+
+    fetchOrders();
+  } , [activeTab ,page, sortBy ,searchQuery])
 
   const getInitials = (name) => {
     return name
@@ -474,7 +520,7 @@ export default function OrdersPage() {
               <TrendingUp className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-xl font-bold">${mockOrders.reduce((sum, order) => sum + order.amount, 0)}</p>
+                <p className="text-xl font-bold">${orders.reduce((sum, order) => sum + order.amount, 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -499,17 +545,50 @@ export default function OrdersPage() {
 
         {Object.keys(tabConfig).map((tab) => (
           <TabsContent key={tab} value={tab}>
-            {filteredOrders.length > 0 ? (
-              <div className="space-y-4">
-                {filteredOrders.map((order) => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState tab={tab} />
-            )}
+          {loading ? (
+  <p className="text-center text-muted-foreground">Loading orders...</p>
+) : filteredOrders.length > 0 ? (
+  <div className="space-y-4">
+    {filteredOrders.map((order) => (
+      <OrderCard key={order.id} order={order} />
+    ))}
+  </div>
+) : (
+  <EmptyState tab={tab} />
+)}
           </TabsContent>
+          
         ))}
+        {totalPages > 1 && (
+  <div className="flex justify-center items-center gap-2 mt-6">
+    <Button
+  variant="outline"
+  size="sm"
+  disabled={page === 1}
+  onClick={() => {
+    setPage(p => Math.max(p - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }}
+>
+  Previous
+</Button>
+
+    <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+  <Button
+  variant="outline"
+  size="sm"
+  disabled={page === totalPages}
+  onClick={() => {
+    setPage(p => Math.min(p + 1, totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }}
+>
+  Next
+</Button>
+
+  </div>
+)}
+
       </Tabs>
     </div>
   );

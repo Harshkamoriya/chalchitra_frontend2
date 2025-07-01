@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CheckCircle, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useSession } from "next-auth/react"
 import { toast } from "react-toastify"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import axios from "axios"
 
 
 // Clean Account Details component
@@ -22,6 +22,7 @@ export default function AccountDetails({ formData, updateFormData, prevStep }) {
     phone: "",
     email: "",
   })
+   const router = useRouter();
 
   // Handle input changes
   const handleChange = (field, value) => {
@@ -30,10 +31,10 @@ export default function AccountDetails({ formData, updateFormData, prevStep }) {
     updateFormData(newData)
   }
 
-  const {data: session} = useSession();
-  console.log(session)
-  const username = session?.user?.name
-  console.log(username , "username");
+  // const {data: session} = useSession();
+  // console.log(session)
+  // const username = session?.user?.name
+  // console.log(username , "username");
 
 //send verification code
   const sendVerificationCode = async (type) => {
@@ -95,37 +96,77 @@ const verifyCode = async (type) => {
   // }
 
   // Handle form submission
-  const handleSubmit = async(e) => {
-    e.preventDefault();
-     if (!localData.phoneVerified || !localData.emailVerified ) {
+  console.log(localData.phoneNumber)
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const token = sessionStorage.getItem("accessToken");
+      const res = await axios.get("/api/user/account_security", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        const data = res.data.user;   // assuming you return { success, user }
+
+        const newData = {
+          phoneNumber: data.phoneNumber || "",
+          phoneVerified: data.phoneVerified || false,
+          email: data.email || "",
+          emailVerified: data.emailVerified || false,
+        };
+
+        setLocalData(newData);
+        updateFormData(newData); // keep parent in sync
+      } else {
+        console.error("Failed to fetch account security info:", res.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching account security info:", error);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!localData.phoneVerified || !localData.emailVerified) {
     alert("Please verify both phone and email before proceeding.");
     return;
   }
-    try {
-       const res = await fetch("/api/user/verify-status", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        phoneNumber,
+
+  try {
+    console.log("inside handleSubmit");
+    const token = sessionStorage.getItem("accessToken");
+
+    const res = await axios.patch(
+      "/api/user/account_security",
+      {
+        phoneNumber: localData.phoneNumber,
         phoneVerified: true,
         emailVerified: true,
-      }),
-    });
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to update verification status");
+    // Axios automatically parses JSON → data is in res.data
+    console.log("Response:", res.data);
 
-    // Redirect after success
-
-    router.push("/users/harshkamoriya/handle_gigs/create_gig");
-    } catch (error) {
-       console.error(error);
-       toast.error("something went wrong")
-    }
-
+    toast.success("Profile setup completed successfully");
+    router.push("/seller/manage/gigs/create_gig");
+  } catch (error) {
+    console.error("Error:", error.response?.data || error.message);
+    toast.error(error.response?.data?.message || "Something went wrong");
   }
+};
+
 
 
   return (

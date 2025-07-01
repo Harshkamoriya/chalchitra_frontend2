@@ -1,29 +1,27 @@
-import authOptions from "@/lib/authOptions";
 import { connectToDB } from "@/lib/db";
-import User from "@/models/user"; // ✅ correct import
-import { getServerSession } from "next-auth";
+import User from "@/models/user";
 import { NextResponse } from "next/server";
+import { authenticateUser } from "@/middlewares/auth";
 
 export async function GET(req) {
   await connectToDB();
-  const session = await getServerSession(authOptions); // ✅ fixed await
 
-  // if (!session || !session.user?.email) {
-  //   return NextResponse.json({
-  //     success: false,
-  //     message: "User unauthorized",
-  //     status: 401,
-  //   });
-  // }
+  const { user } = await authenticateUser(req); // ✅ await here
+
+  if (!user) {
+    return NextResponse.json({ success: false, message: "User not found", status: 404 });
+  }
 
   try {
-    const sessionEmail = session.user.email;
-    const user = await User.findOne({ email: sessionEmail }); // ✅ correct method
+    const id = user._id;
+    console.log(id, "id in the user/me/personal");
 
-    if (!user) {
+    const foundUser = await User.findById(id); // ✅ changed from `User.findOne({ id })`
+
+    if (!foundUser) {
       return NextResponse.json({
         success: false,
-        message: "User not found",
+        message: "User not found in DB",
         status: 404,
       });
     }
@@ -33,9 +31,9 @@ export async function GET(req) {
       status: 200,
       message: "User found successfully",
       user: {
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        name: foundUser.name,
+        email: foundUser.email,
+        role: foundUser.role,
       },
     });
   } catch (error) {

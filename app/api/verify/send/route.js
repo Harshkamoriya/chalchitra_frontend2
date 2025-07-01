@@ -5,6 +5,7 @@ import { connectToDB } from "@/lib/db"
 import { sendVerificationEmail } from "@/lib/sendEmail"
 import { sendVerificationSMS } from "@/lib/sendSMS"
 
+import { sendOtpEmail } from "@/lib/sendotpEmail"
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
@@ -29,9 +30,17 @@ export async function POST(req) {
   )
 
   if (type === "email") {
-    console.log("inside backend of sending email")
-  await sendVerificationEmail(identifier, code)
+      try {
+        console.log(identifier,"identifier")
+    await sendOtpEmail(identifier, code);
+    return NextResponse.json({success:true , status:200 , message :"otp send successfully"})
+  } catch (error) {
+    console.error("error coming in sending the otp on email" , error.message)
+    return NextResponse.json({success:false , status:500 , message:"something went wrong"})
+
+  }
 }
+
 
 if (type === "phone") {
   

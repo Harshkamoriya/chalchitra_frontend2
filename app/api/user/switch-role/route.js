@@ -3,24 +3,24 @@ import { getServerSession } from "next-auth";
 import authOptions from "@/lib/authOptions";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
+import { authenticateUser } from "@/middlewares/auth";
 
 export async function POST(req) {
   await connectToDB();
 
-  const session = await getServerSession(authOptions);
-  if (!session || !session.user?.email) {
-    return NextResponse.json({
-      success: false,
-      message: "User unauthorized",
-      status: 401,
-    });
-  }
+ const authResult  = authenticateUser(req);
+
+ if(authResult instanceof Response) return authResult;
+
+ 
 
   try {
     const { newRole } = await req.json();
-    const sessionEmail = session.user.email;
 
-    const user = await User.findOne({ email: sessionEmail });
+    const {id ,role} = req.user()
+    console.log("id ", id);
+
+    const user = await User.findOne({id});
     if (!user) {
       return NextResponse.json({
         success: false,

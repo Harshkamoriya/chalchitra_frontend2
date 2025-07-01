@@ -102,7 +102,7 @@ GigCard.displayName = "GigCard"
 
 const Gigs = () => {
 
-  const { session, gigs, getAllGigs ,postGig} = useAppContext()
+  const { session, gigs, getAllGigs ,} = useAppContext()
   const scrollRef = useRef(null)
   const [showAll, setShowAll] = useState(false)
   const Router = useRouter();

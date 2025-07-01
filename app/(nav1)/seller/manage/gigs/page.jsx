@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import { useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import axios from "axios"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Dialog,
@@ -44,130 +46,131 @@ import {
   Users,
   XCircle,
 } from "lucide-react"
+import AccessToken from "twilio/lib/jwt/AccessToken"
 
 // Mock gigs data
-const mockGigs = [
-  {
-    id: "GIG-001",
-    title: "Professional Logo Design & Brand Identity Package",
-    description: "I will create a stunning logo and complete brand identity for your business",
-    category: "Graphic Design",
-    subcategory: "Logo Design",
-    price: 150,
-    status: "live",
-    impressions: 1250,
-    clicks: 89,
-    orders: 12,
-    cancellations: 1,
-    rating: 4.9,
-    reviews: 45,
-    favorites: 23,
-    createdAt: "2024-01-15",
-    lastModified: "2024-01-20",
-    deliveryTime: 3,
-    ordersInQueue: 2,
-    isAcceptingOrders: true,
-    hasWatermark: true,
-    tags: ["logo", "branding", "design", "business"],
-    images: ["/placeholder.svg"],
-  },
-  {
-    id: "GIG-002",
-    title: "Custom Website Development with Modern Design",
-    description: "I will build a responsive website using latest technologies",
-    category: "Programming & Tech",
-    subcategory: "Website Development",
-    price: 450,
-    status: "draft",
-    impressions: 0,
-    clicks: 0,
-    orders: 0,
-    cancellations: 0,
-    rating: 0,
-    reviews: 0,
-    favorites: 0,
-    createdAt: "2024-01-22",
-    lastModified: "2024-01-22",
-    deliveryTime: 7,
-    ordersInQueue: 0,
-    isAcceptingOrders: true,
-    hasWatermark: false,
-    tags: ["website", "development", "responsive", "modern"],
-    images: ["/placeholder.svg"],
-  },
-  {
-    id: "GIG-003",
-    title: "Social Media Content Creation & Strategy",
-    description: "I will create engaging content for your social media platforms",
-    category: "Digital Marketing",
-    subcategory: "Social Media Marketing",
-    price: 200,
-    status: "pending",
-    impressions: 450,
-    clicks: 32,
-    orders: 3,
-    cancellations: 0,
-    rating: 4.7,
-    reviews: 18,
-    favorites: 12,
-    createdAt: "2024-01-18",
-    lastModified: "2024-01-21",
-    deliveryTime: 5,
-    ordersInQueue: 1,
-    isAcceptingOrders: true,
-    hasWatermark: true,
-    tags: ["social media", "content", "marketing", "strategy"],
-    images: ["/placeholder.svg"],
-  },
-  {
-    id: "GIG-004",
-    title: "Video Editing for YouTube & Social Media",
-    description: "I will edit your videos with professional quality and effects",
-    category: "Video & Animation",
-    subcategory: "Video Editing",
-    price: 120,
-    status: "paused",
-    impressions: 890,
-    clicks: 67,
-    orders: 8,
-    cancellations: 2,
-    rating: 4.6,
-    reviews: 28,
-    favorites: 15,
-    createdAt: "2024-01-10",
-    lastModified: "2024-01-19",
-    deliveryTime: 4,
-    ordersInQueue: 0,
-    isAcceptingOrders: false,
-    hasWatermark: true,
-    tags: ["video editing", "youtube", "social media", "effects"],
-    images: ["/placeholder.svg"],
-  },
-  {
-    id: "GIG-005",
-    title: "Mobile App UI/UX Design",
-    description: "I will design beautiful and user-friendly mobile app interfaces",
-    category: "Graphics & Design",
-    subcategory: "UI/UX Design",
-    price: 350,
-    status: "requires_modification",
-    impressions: 320,
-    clicks: 28,
-    orders: 2,
-    cancellations: 0,
-    rating: 5.0,
-    reviews: 8,
-    favorites: 6,
-    createdAt: "2024-01-12",
-    lastModified: "2024-01-16",
-    deliveryTime: 6,
-    ordersInQueue: 1,
-    isAcceptingOrders: true,
-    hasWatermark: false,
-    tags: ["ui design", "ux design", "mobile app", "interface"],
-    images: ["/placeholder.svg"],
-  },
-]
+// const mockGigs = [
+//   {
+//     id: "GIG-001",
+//     title: "Professional Logo Design & Brand Identity Package",
+//     description: "I will create a stunning logo and complete brand identity for your business",
+//     category: "Graphic Design",
+//     subcategory: "Logo Design",
+//     price: 150,
+//     status: "live",
+//     impressions: 1250,
+//     clicks: 89,
+//     orders: 12,
+//     cancellations: 1,
+//     rating: 4.9,
+//     reviews: 45,
+//     favorites: 23,
+//     createdAt: "2024-01-15",
+//     lastModified: "2024-01-20",
+//     deliveryTime: 3,
+//     ordersInQueue: 2,
+//     isAcceptingOrders: true,
+//     hasWatermark: true,
+//     tags: ["logo", "branding", "design", "business"],
+//     images: ["/placeholder.svg"],
+//   },
+//   {
+//     id: "GIG-002",
+//     title: "Custom Website Development with Modern Design",
+//     description: "I will build a responsive website using latest technologies",
+//     category: "Programming & Tech",
+//     subcategory: "Website Development",
+//     price: 450,
+//     status: "draft",
+//     impressions: 0,
+//     clicks: 0,
+//     orders: 0,
+//     cancellations: 0,
+//     rating: 0,
+//     reviews: 0,
+//     favorites: 0,
+//     createdAt: "2024-01-22",
+//     lastModified: "2024-01-22",
+//     deliveryTime: 7,
+//     ordersInQueue: 0,
+//     isAcceptingOrders: true,
+//     hasWatermark: false,
+//     tags: ["website", "development", "responsive", "modern"],
+//     images: ["/placeholder.svg"],
+//   },
+//   {
+//     id: "GIG-003",
+//     title: "Social Media Content Creation & Strategy",
+//     description: "I will create engaging content for your social media platforms",
+//     category: "Digital Marketing",
+//     subcategory: "Social Media Marketing",
+//     price: 200,
+//     status: "pending",
+//     impressions: 450,
+//     clicks: 32,
+//     orders: 3,
+//     cancellations: 0,
+//     rating: 4.7,
+//     reviews: 18,
+//     favorites: 12,
+//     createdAt: "2024-01-18",
+//     lastModified: "2024-01-21",
+//     deliveryTime: 5,
+//     ordersInQueue: 1,
+//     isAcceptingOrders: true,
+//     hasWatermark: true,
+//     tags: ["social media", "content", "marketing", "strategy"],
+//     images: ["/placeholder.svg"],
+//   },
+//   {
+//     id: "GIG-004",
+//     title: "Video Editing for YouTube & Social Media",
+//     description: "I will edit your videos with professional quality and effects",
+//     category: "Video & Animation",
+//     subcategory: "Video Editing",
+//     price: 120,
+//     status: "paused",
+//     impressions: 890,
+//     clicks: 67,
+//     orders: 8,
+//     cancellations: 2,
+//     rating: 4.6,
+//     reviews: 28,
+//     favorites: 15,
+//     createdAt: "2024-01-10",
+//     lastModified: "2024-01-19",
+//     deliveryTime: 4,
+//     ordersInQueue: 0,
+//     isAcceptingOrders: false,
+//     hasWatermark: true,
+//     tags: ["video editing", "youtube", "social media", "effects"],
+//     images: ["/placeholder.svg"],
+//   },
+//   {
+//     id: "GIG-005",
+//     title: "Mobile App UI/UX Design",
+//     description: "I will design beautiful and user-friendly mobile app interfaces",
+//     category: "Graphics & Design",
+//     subcategory: "UI/UX Design",
+//     price: 350,
+//     status: "requires_modification",
+//     impressions: 320,
+//     clicks: 28,
+//     orders: 2,
+//     cancellations: 0,
+//     rating: 5.0,
+//     reviews: 8,
+//     favorites: 6,
+//     createdAt: "2024-01-12",
+//     lastModified: "2024-01-16",
+//     deliveryTime: 6,
+//     ordersInQueue: 1,
+//     isAcceptingOrders: true,
+//     hasWatermark: false,
+//     tags: ["ui design", "ux design", "mobile app", "interface"],
+//     images: ["/placeholder.svg"],
+//   },
+// ]
 
 const statusConfig = {
   live: { label: "Live", color: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -193,39 +196,76 @@ export default function GigsPage() {
   const [sortBy, setSortBy] = useState("recent")
   const [acceptingCustomOrders, setAcceptingCustomOrders] = useState(true)
   const [selectedGig, setSelectedGig] = useState(null)
+  const [gigs, setGigs] = useState([]);
+const [page, setPage] = useState(1);
+const [pages, setPages] = useState(1); // total pages from backend
+const [loading, setLoading] = useState(false);
 
-  const filteredGigs = useMemo(() => {
-    let filtered = mockGigs
-
-    // Filter by tab
-    filtered = filtered.filter((gig) => gig.status === activeTab)
-
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter((gig) =>
-        gig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gig.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        gig.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-    }
-
-    // Sort gigs
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "recent":
-          return new Date(b.lastModified) - new Date(a.lastModified);
-        case "performance":
-          return b.impressions - a.impressions
-        case "price":
-          return b.price - a.price
-        case "orders":
-          return b.orders - a.orders
-        default:
-          return 0
+useEffect(() => {
+  const fetchGigs = async () => {
+     console.log("activeTab changed to:", activeTab);
+  console.log("page changed to:", page);
+    setLoading(true);
+    try {
+      console.log("inside the fetchgigs function")
+      const token =  sessionStorage.getItem("accessToken");
+      const res = await axios.get(`/api/user/gigs?status=${activeTab}&page=${page}&limit=10`,
+       { headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // Assuming you store token in localStorage
       }
     })
+    const data = res.data;
+    console.log(data  ,"data");
+      if (data.success) {
+        setGigs(data.gigs);
+        setPages(data.pagination.pages);
+        console.log(data, 
+          'data'
+        )
+      }
+    } catch (error) {
+console.error("Error fetching gigs:", error.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return filtered
-  }, [activeTab, searchQuery, sortBy])
+  fetchGigs();
+}, [activeTab, page]);
+
+
+const filteredGigs = useMemo(() => {
+  let filtered = gigs;
+
+  // Search
+  if (searchQuery) {
+    filtered = filtered.filter((gig) =>
+      gig.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      gig.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      gig.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }
+
+  // Sort
+  filtered = filtered.slice().sort((a, b) => {
+    switch (sortBy) {
+      case "recent":
+        return new Date(b.lastModified) - new Date(a.lastModified);
+      case "performance":
+        return b.impressions - a.impressions;
+      case "price":
+        return b.price - a.price;
+      case "orders":
+        return b.orders - a.orders;
+      default:
+        return 0;
+    }
+  });
+
+  return filtered;
+}, [gigs, searchQuery, sortBy]);
+
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -251,7 +291,7 @@ export default function GigsPage() {
           <div
             className="relative h-48 bg-gradient-to-br from-primary/10 to-primary/5 rounded-t-lg overflow-hidden">
             <img
-              src={gig.images[0] || "/placeholder.svg"}
+              src={gig.images || "/a.jpg"}
               alt={gig.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
             <div className="absolute top-3 left-3">
@@ -378,6 +418,9 @@ export default function GigsPage() {
       </Card>
     );
   }
+  // const gigcard end here it was code about gigcard
+
+  //nos gigdetails modal is begining
 
   const GigDetailsModal = ({ gig }) => {
     if (!gig) return null
@@ -389,7 +432,7 @@ export default function GigsPage() {
             <span>{gig.title}</span>
             <Badge className={statusConfig[gig.status]?.color}>{statusConfig[gig.status]?.label}</Badge>
           </DialogTitle>
-          <DialogDescription>Service ID: {gig.id}</DialogDescription>
+          <DialogDescription>Service ID: {gig._id}</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* Left Column - Service Info */}
@@ -541,6 +584,8 @@ export default function GigsPage() {
     );
   }
 
+  //  gig details modal end here
+
   const EmptyState = ({ tab }) => {
     const TabIcon = tabConfig[tab]?.icon
 
@@ -592,7 +637,7 @@ export default function GigsPage() {
           </div>
 
           {/* Create Gig Button */}
-          <Link href="/users/harshkamoriya/handle_gigs/create_gig">
+          <Link href="gigs/create_gigs">
             <Button
               className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4" />
@@ -669,7 +714,7 @@ export default function GigsPage() {
               <TrendingUp className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Orders</p>
-                <p className="text-xl font-bold">{mockGigs.reduce((sum, gig) => sum + gig.orders, 0)}</p>
+                <p className="text-xl font-bold">{gigs.reduce((sum, gig) => sum + gig.orders, 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -680,7 +725,7 @@ export default function GigsPage() {
               <Eye className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Views</p>
-                <p className="text-xl font-bold">{mockGigs.reduce((sum, gig) => sum + gig.impressions, 0)}</p>
+                <p className="text-xl font-bold">{gigs.reduce((sum, gig) => sum + gig.impressions, 0)}</p>
               </div>
             </div>
           </CardContent>
@@ -708,14 +753,36 @@ export default function GigsPage() {
             {filteredGigs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredGigs.map((gig) => (
-                  <GigCard key={gig.id} gig={gig} />
+                  <GigCard key={gig._id} gig={gig} />
                 ))}
               </div>
             ) : (
               <EmptyState tab={tab} />
             )}
           </TabsContent>
+          
         ))}
+        <div className="flex justify-center items-center mt-6 gap-2">
+  <Button
+    disabled={page <= 1}
+    onClick={() => setPage((p) => p - 1)}
+    variant="outline"
+    size="sm"
+  >
+    Prev
+  </Button>
+  <span className="text-sm">
+    Page {page} of {pages}
+  </span>
+  <Button
+    disabled={page >= pages}
+    onClick={() => setPage((p) => p + 1)}
+    variant="outline"
+    size="sm"
+  >
+    Next
+  </Button>
+</div>
       </Tabs>
       {/* Gig Details Modal */}
       <Dialog>

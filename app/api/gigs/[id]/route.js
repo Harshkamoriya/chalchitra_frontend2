@@ -1,6 +1,7 @@
 import Gigs from "@/models/Gigs";
 import { NextResponse } from "next/server";
 import { connectToDB } from "@/lib/db";
+import { authenticateUser } from "@/middlewares/auth";
 
 // GET a single gig by ID
 export async function GET(req, { params }) {
@@ -30,6 +31,49 @@ export async function GET(req, { params }) {
   }
 }
 
+// /app/api/gig/[id]/route.js (for PATCH - update specific gig)
+export async function PATCH(req, { params }) {
+  await connectToDB();
+
+  try {
+    const authResult = await authenticateUser(req);
+    const user = authResult.user;
+
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'Unauthorized user' }, { status: 401 });
+    }
+
+    const gigId =  params.id;
+    const body = await req.json();
+
+    // optional backend fix
+   const deliveryTimeMap = { "1-week": 7, "3-days": 3, "2-days": 2 };
+
+if (Array.isArray(body.packages)) {
+  body.packages = body.packages.map(pkg => ({
+    ...pkg,
+    deliveryTime: deliveryTimeMap[pkg.deliveryTime] || Number(pkg.deliveryTime) || 0
+  }));
+} else {
+  console.warn("⚠️ body.packages missing or not an array");
+  body.packages = []; // optional: default empty
+}
+
+
+    const updatedGig = await Gigs.findByIdAndUpdate(gigId, body, { new: true, runValidators: true });
+
+    return NextResponse.json({ success: true, gig: updatedGig }, { status: 200 });
+
+  } catch (err) {
+    console.error("Gig update error:", err);
+    return NextResponse.json({ success: false, message: 'Failed to update gig' }, { status: 500 });
+  }
+}
+
+
+
+
+
 // DELETE a gig by ID
 export async function DELETE(req, { params }) {
   await connectToDB();
@@ -58,51 +102,51 @@ export async function DELETE(req, { params }) {
   }
 }
 
-// UPDATE a gig by ID
-export async function PUT(req, { params }) {
-  await connectToDB();
-  const { id } = params;
-  const data = await req.json();
+// // UPDATE a gig by ID
+// export async function PUT(req, { params }) {
+//   await connectToDB();
+//   const { id } = params;
+//   const data = await req.json();
 
-  console.log(data, "data from request for update");
-  console.log(id, "gig id from params for update");
+//   console.log(data, "data from request for update");
+//   console.log(id, "gig id from params for update");
 
-  // Sanitize data: only allow valid fields
-  const allowedFields = ["title", "description", "price", "image", "gallery", "category"];
-  const sanitizedData = allowedFields.reduce((acc, field) => {
-    if (data[field] !== undefined) acc[field] = data[field];
-    return acc;
-  }, {});
+//   // Sanitize data: only allow valid fields
+//   const allowedFields = ["title", "description", "price", "image", "gallery", "category"];
+//   const sanitizedData = allowedFields.reduce((acc, field) => {
+//     if (data[field] !== undefined) acc[field] = data[field];
+//     return acc;
+//   }, {});
 
-  try {
-    const updatedGig = await Gigs.findByIdAndUpdate(id, sanitizedData, {
-      new: true,
-      runValidators: true,
-    });
+//   try {
+//     const updatedGig = await Gigs.findByIdAndUpdate(id, sanitizedData, {
+//       new: true,
+//       runValidators: true,
+//     });
 
-    if (!updatedGig) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Gig not found and not updated",
-        },
-        { status: 404 }
-      );
-    }
+//     if (!updatedGig) {
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           message: "Gig not found and not updated",
+//         },
+//         { status: 404 }
+//       );
+//     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Gig updated successfully",
-        gig: updatedGig,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error updating gig:", error);
-    return NextResponse.json(
-      { success: false, message: "Something went wrong" },
-      { status: 500 }
-    );
-  }
-}
+//     return NextResponse.json(
+//       {
+//         success: true,
+//         message: "Gig updated successfully",
+//         gig: updatedGig,
+//       },
+//       { status: 200 }
+//     );
+//   } catch (error) {
+//     console.error("Error updating gig:", error);
+//     return NextResponse.json(
+//       { success: false, message: "Something went wrong" },
+//       { status: 500 }
+//     );
+//   }
+// }

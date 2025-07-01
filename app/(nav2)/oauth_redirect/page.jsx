@@ -8,6 +8,7 @@ const OAuthRedirectPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/";
+  console.log(from  ,"from url")
   const { login } = useAuth();
 
   useEffect(() => {

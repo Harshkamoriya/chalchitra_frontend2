@@ -1,5 +1,6 @@
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { Roboto } from "next/font/google";
 
 import { AppContext } from "./(nav2)/context/AppContext";
 import { AppContextProvider } from "./(nav2)/context/AppContext";

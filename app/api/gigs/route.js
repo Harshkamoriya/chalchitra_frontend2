@@ -1,87 +1,43 @@
 import { NextResponse } from "next/server";
-import User from "@/models/user";
 import Gigs from "@/models/Gigs";
-
-import { getServerSession } from "next-auth";
+import User from "@/models/user";
 import { connectToDB } from "@/lib/db";
-import authOptions from "@/lib/authOptions"; // ✅ Import authOptions
+import { authenticateUser } from "@/middlewares/auth";
+
+// /app/api/gig/route.js (for POST - create new gig)
+
+
 
 export async function POST(req) {
-  const session = await getServerSession(authOptions); // ✅ use authOptions
+  await connectToDB()
 
-  if (!session?.user?.email) {
-    return NextResponse.json({
-      message: "unauthorized",
-      status: 401,
-      success: false,
-    });
+  const authResult = await authenticateUser(req)
+  if (authResult instanceof Response) return authResult
+
+  const {user} = authResult
+  if (!user) {
+    return NextResponse.json({ success: false, message: "Unauthorized user", status: 401 })
   }
-
-  console.log("session in route of posting gigs", session);
 
   try {
-    await connectToDB();
-    const body = await req.json();
+    const body = await req.json()
+    console.log(body, " body of gig");
 
-    const {
-      title,
-      description,
-      category,
-      tags = [],
-      packages = [],
-      media,
-      requirements = [],
-      faq = [],
-      isFeatured = false,
-      status = 'active',
-    } = body;
+    const newGig = new Gigs({
+      ...body,
+      seller: user._id,
+      status: body.status || "draft",
+    })
 
-        if (!title || !description || !category || !media?.coverImage) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
+    const savedGig = await newGig.save()
 
-    const user = await User.findOne({ email: session.user.email }); // ✅ Fix here too
-
-    if (!user) {
-      console.log("user not found");
-      return NextResponse.json({
-        message: "user not found",
-        status: 404,
-        success: false,
-      });
-    }
-
-     const newGig = new Gigs({
-      title,
-      description,
-      seller: user._id, // from logged in user session
-      category,
-      tags,
-      packages,
-      media,
-      requirements,
-      faq,
-      isFeatured,
-      status,
-    });
-
-    await newGig.save();
-
-    return NextResponse.json({
-      message: "Gig created successfully",
-      success: true,
-      status: 201,
-      newGig,
-    });
-  } catch (error) {
-    console.error("Error creating gig:", error);
-    return NextResponse.json({
-      message: "Something went wrong",
-      status: 500,
-      success: false,
-    });
+    return NextResponse.json({ success: true, message: "Gig created", status: 201, gig: savedGig })
+  } catch (err) {
+    console.error("Gig creation error:", err)
+    return NextResponse.json({ success: false, message: "Failed to create gig", status: 500 })
   }
 }
+
 
 export async function GET() {
   try {

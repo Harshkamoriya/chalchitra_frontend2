@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useEffect } from "react"
 import { Camera, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,14 +78,57 @@ export default function PersonalInfo({ formData, updateFormData, onNext }) {
     handleChange("languages", newLanguages)
   }
 
+  // function to prefill data
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const token = sessionStorage.getItem("accessToken");
+      const res = await axios.get("/api/user/personal", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.data.success) {
+        const data = res.data.user;
+
+        // Update localData and selectedLanguages
+        const newData = {
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          displayName: data.displayName || "",
+          profileImage: data.profileImage || "",
+          description: data.description || "",
+          languages: data.languages || [],
+        };
+
+        setLocalData(newData);
+        setSelectedLanguages(newData.languages || []);
+
+        if (newData.profileImage) {
+          setPreviewUrl(newData.profileImage);
+        }
+
+        // Optional: update parent formData if needed
+        updateFormData(newData);
+      } else {
+        console.error("Failed to fetch personal info:", res.data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching personal info:", error);
+    }
+  };
+
+  fetchData();
+}, []);
   // Handle form submission
  const handleSubmit = async (e) => {
+  const token = sessionStorage.getItem("accessToken")
   e.preventDefault();
   try {
     const api = "/api/user/personal";
-    const res = await axios.post(api, localData, {
+    const res = await axios.patch(api, localData, {
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
     });
 

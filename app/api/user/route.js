@@ -1,55 +1,102 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import authOptions from "@/lib/authOptions";
-import User from "@/models/user";
+// isme get user update user delete user ye teen code like
+
 import { connectToDB } from "@/lib/db";
+import { authenticateUser } from "@/middlewares/auth";
+import { NextResponse } from "next/server";
+import User from "@/models/user";
 
-export async function POST(req) {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user?.email) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+export async function GET(req) {
+  const { user } = await authenticateUser(req);
+  if (!user) {
+    return NextResponse.json({ success: false, message: "user not authorized", status: 401 });
   }
 
   await connectToDB();
-
   try {
-    console.log("in the backend route of professional data")
-    const body = await req.json();
-    console.log(body , "body fetched in the backend")
-    // console.log(body);
-    console.log(session , "session")
+    const id = user._id;
+    console.log(id, "id in the user/me/personal");
 
-    const {
-      occupation,
-    skills,
-    education,
-    certifications,
-    website,
+    const dbUser = await User.findOne({ _id: id });
 
-    } = body;
+    if (!dbUser) {
+      return NextResponse.json({ success: false, message: "user not found", status: 404 });
+    }
 
-    // const name = firstName + " "+ lastName;
+    console.log("user found succs", dbUser);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { email: session.user.email },
-      {
-        $set: {
-                occupation,
-    skills,
-    education,
-    certifications,
-    website,
-         
-        },
-      },
-      { new: true, upsert: true }
-    );
-
-    return NextResponse.json({ success: true, user: updatedUser });
+    return NextResponse.json({
+      success: true,
+      status: 200,
+      message: "User found successfully",
+      user: dbUser
+    });
   } catch (error) {
-    console.error(error , "error in catch");
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    console.error("GET /api/user/me error:", error.message);
+    return NextResponse.json({ success: false, message: "something went wrong server error", error });
+  }
+}
+// put or update the user
+
+export async function PUT(req) {
+  const { user } = await authenticateUser(req);
+  if (!user) {
+    return NextResponse.json({ success: false, message: "User not authorized", status: 401 });
+  }
+
+  await connectToDB();
+  try {
+    const id = user._id;
+    const updateData = await req.json();
+
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!updatedUser) {
+      return NextResponse.json({ success: false, message: "User not found", status: 404 });
+    }
+
+    console.log("User updated successfully", updatedUser);
+
+    return NextResponse.json({
+      success: true,
+      status: 200,
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("PUT /api/user error:", error.message);
+    return NextResponse.json({ success: false, message: "Something went wrong", error });
   }
 }
 
+
+// ## ✅ DELETE /api/user
+
+export async function DELETE(req) {
+  const { user } = await authenticateUser(req);
+  if (!user) {
+    return NextResponse.json({ success: false, message: "User not authorized", status: 401 });
+  }
+
+  await connectToDB();
+  try {
+    const id = user._id;
+    console.log(id, "User id in delete backend");
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return NextResponse.json({ success: false, message: "User not found", status: 404 });
+    }
+
+    console.log("User deleted successfully", deletedUser);
+
+    return NextResponse.json({
+      success: true,
+      status: 200,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE /api/user error:", error.message);
+    return NextResponse.json({ success: false, message: "Something went wrong", error });
+  }
+}
