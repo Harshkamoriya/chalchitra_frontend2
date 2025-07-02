@@ -564,12 +564,12 @@ toast.error("Please fix the errors: Some required fields need your attention")
     }
 
     // if the current tab is the last tab and all the tabs are fullfilled 
-    if(isLastStep){
-        console.log("at last step or last tab")
+    // if(isLastStep){
+    //     console.log("at last step or last tab")
        
-        router.push("/seller/manage/gigs")
+    //     router.push("/seller/manage/gigs")
         
-    }
+    // }
 
     // Navigate to next tab
     const currentIndex = sections.indexOf(currentTab)

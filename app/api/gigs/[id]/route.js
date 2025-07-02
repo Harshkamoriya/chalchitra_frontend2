@@ -6,6 +6,16 @@ import { authenticateUser } from "@/middlewares/auth";
 // GET a single gig by ID
 export async function GET(req, { params }) {
   await connectToDB();
+  // const authResult  = await authenticateUser(req);
+  // if (authResult instanceof Response) return authResult;    
+
+  // const { user } = authResult;
+  // if (!user) {  
+  //   return NextResponse.json(
+  //     { success: false, message: "Unauthorized user" },
+  //     { status: 401 }
+  //   );
+  // }
   const { id } = params;
   console.log(id, "gig id from params");
 
@@ -17,6 +27,7 @@ export async function GET(req, { params }) {
         { status: 404 }
       );
     }
+    console.log(gig, "gig found");
 
     return NextResponse.json(
       { success: true, message: "Gig found successfully", gig },
@@ -40,33 +51,47 @@ export async function PATCH(req, { params }) {
     const user = authResult.user;
 
     if (!user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized user' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized user' },
+        { status: 401 }
+      );
     }
 
-    const gigId =  params.id;
+    const gigId = params.id;
     const body = await req.json();
 
-    // optional backend fix
-   const deliveryTimeMap = { "1-week": 7, "3-days": 3, "2-days": 2 };
+    // Fix deliveryTime mapping safely
+    const deliveryTimeMap = { "1-week": 7, "3-days": 3, "2-days": 2 };
 
-if (Array.isArray(body.packages)) {
-  body.packages = body.packages.map(pkg => ({
-    ...pkg,
-    deliveryTime: deliveryTimeMap[pkg.deliveryTime] || Number(pkg.deliveryTime) || 0
-  }));
-} else {
-  console.warn("⚠️ body.packages missing or not an array");
-  body.packages = []; // optional: default empty
-}
+    if (Array.isArray(body.packages)) {
+      body.packages = body.packages.map(pkg => ({
+        ...pkg,
+        deliveryTime: deliveryTimeMap[pkg.deliveryTime] || Number(pkg.deliveryTime) || 0
+      }));
+    }
 
+    // ✅ use $set to avoid replacing entire document
+    const updatedGig = await Gigs.findByIdAndUpdate(
+      gigId,
+      { $set: body },
+      { new: true, runValidators: true }
+    );
 
-    const updatedGig = await Gigs.findByIdAndUpdate(gigId, body, { new: true, runValidators: true });
+    if (!updatedGig) {
+      return NextResponse.json(
+        { success: false, message: 'Gig not found' },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true, gig: updatedGig }, { status: 200 });
 
   } catch (err) {
     console.error("Gig update error:", err);
-    return NextResponse.json({ success: false, message: 'Failed to update gig' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to update gig', error: err.message },
+      { status: 500 }
+    );
   }
 }
 

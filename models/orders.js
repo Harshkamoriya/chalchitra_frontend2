@@ -65,6 +65,16 @@ const orderSchema = new mongoose.Schema({
   category: { type: String },  // e.g., "Graphic Design"
   serviceTitle: { type: String }, // "Logo Design & Brand Identity"
   isRated: { type: Boolean, default: false },
+
+  // Extra fields to add (suggested)
+paymentIntentId: { type: String },       // Stripe payment intent id
+paymentStatus: { type: String, enum: ['pending', 'succeeded', 'failed'], default: 'pending' },
+
+payoutStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+applicationFeeAmount: { type: Number },  // platform commission (in smallest currency unit, e.g. paise)
+transferAmount: { type: Number },        // amount going to seller (after fee)
+currency: { type: String, default: 'usd' },
+
 }, {
   timestamps: true // adds createdAt & updatedAt
 });

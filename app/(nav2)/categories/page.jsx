@@ -20,7 +20,7 @@ const GigCard = memo(({ gig ,onClick}) => {
       {/* Image Container */}
       <div className="relative overflow-hidden">
         <img
-          src={gig.media.coverImage ||"/1.jpg" }
+          src={gig.media?.coverImage ||"/1.jpg" }
           alt={gig.title}
           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
@@ -142,311 +142,311 @@ const Gigs = () => {
   ]
 
 //   
-const Agigs = [
-  {
-    title: "Social Media Promo Videos",
-    description: "Create eye-catching promos for Instagram and Facebook.",
-    category: "Social & Marketing",
-    tags: ["social", "promo", "instagram", "facebook"],
-    seller: "64fba9d64be2cf0a2e63c111", // Replace with real seller ObjectId
-    media: {
-      coverImage: "/1.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?promo1",
-        "https://source.unsplash.com/featured/?promo2",
-        "https://source.unsplash.com/featured/?promo3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Basic",
-        description: "1 short promo video",
-        price: 30,
-        deliveryTime: 2,
-        revisions: 1,
-        features: ["30s video", "Royalty-free music"]
-      }
-    ],
-    requirements: [
-      {
-        question: "What is your product or brand name?",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: [
-      {
-        question: "Can I use my own footage?",
-        answer: "Yes, just upload it during order."
-      }
-    ]
-  },
-  {
-    title: "Presenter Spokesperson Video",
-    description: "Hire a professional presenter to explain your product or service.",
-    category: "Presenter Videos",
-    tags: ["spokesperson", "video", "explainer"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/presenter1.png",
-      gallery: [
-        "https://source.unsplash.com/featured/?presenter1",
-        "https://source.unsplash.com/featured/?presenter2",
-        "https://source.unsplash.com/featured/?presenter3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Standard",
-        description: "60s presenter video",
-        price: 70,
-        deliveryTime: 3,
-        revisions: 2,
-        features: ["HD video", "Script reading", "Green screen"]
-      }
-    ],
-    requirements: [
-      {
-        question: "Please upload your script.",
-        type: "file",
-        required: true
-      }
-    ],
-    faq: [
-      {
-        question: "Do you provide script writing?",
-        answer: "No, you must provide the script."
-      }
-    ]
-  },
-  {
-    title: "Animated Explainer Videos",
-    description: "2D animation explainer videos for startups and apps.",
-    category: "Explainer Videos",
-    tags: ["explainer", "2D", "animation"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/1a.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?explainer1",
-        "https://source.unsplash.com/featured/?explainer2",
-        "https://source.unsplash.com/featured/?explainer3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Premium",
-        description: "90s animated explainer",
-        price: 120,
-        deliveryTime: 5,
-        revisions: 3,
-        features: ["Custom characters", "Voiceover", "Script"]
-      }
-    ],
-    requirements: [
-      {
-        question: "What’s your app/product about?",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: []
-  },
-  {
-    title: "Custom Logo Animation",
-    description: "Professional logo animations in 24 hours.",
-    category: "Animation",
-    tags: ["logo", "animation", "branding"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/animation1.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?logo1",
-        "https://source.unsplash.com/featured/?logo2",
-        "https://source.unsplash.com/featured/?logo3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Basic",
-        description: "Logo reveal animation",
-        price: 25,
-        deliveryTime: 1,
-        revisions: 1,
-        features: ["Transparent background", "1080p output"]
-      }
-    ],
-    requirements: [
-      {
-        question: "Upload your logo file",
-        type: "file",
-        required: true
-      }
-    ],
-    faq: []
-  },
-  {
-    title: "Product Showcase Video",
-    description: "High-quality product demo videos with transitions and effects.",
-    category: "Product Videos",
-    tags: ["product", "demo", "showcase"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/product1.png",
-      gallery: [
-        "https://source.unsplash.com/featured/?product1",
-        "https://source.unsplash.com/featured/?product2",
-        "https://source.unsplash.com/featured/?product3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Standard",
-        description: "60s product video",
-        price: 60,
-        deliveryTime: 2,
-        revisions: 2,
-        features: ["Transitions", "Text overlays"]
-      }
-    ],
-    requirements: [
-      {
-        question: "Link to your product or product images",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: []
-  },
-  {
-    title: "Motion Graphics Intro",
-    description: "Stylish and modern intros using After Effects.",
-    category: "Motion Graphics",
-    tags: ["motion", "intro", "after effects"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/motion1.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?motion1",
-        "https://source.unsplash.com/featured/?motion2",
-        "https://source.unsplash.com/featured/?motion3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Basic",
-        description: "10s motion intro",
-        price: 40,
-        deliveryTime: 1,
-        revisions: 1,
-        features: ["Sound effects", "Modern design"]
-      }
-    ],
-    requirements: [
-      {
-        question: "What text or logo should appear in the intro?",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: []
-  },
-  {
-    title: "Cinematic Film Production",
-    description: "End-to-end film production for commercials and short films.",
-    category: "Filmed Video Production",
-    tags: ["cinematic", "film", "shoot"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/film.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?film1",
-        "https://source.unsplash.com/featured/?film2",
-        "https://source.unsplash.com/featured/?film3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Premium",
-        description: "Full production with editing",
-        price: 300,
-        deliveryTime: 10,
-        revisions: 3,
-        features: ["Crew", "Editing", "Color grading"]
-      }
-    ],
-    requirements: [
-      {
-        question: "Describe your film idea",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: []
-  },
-  {
-    title: "Unique Video Editing Requests",
-    description: "Handling unique and out-of-the-box video projects.",
-    category: "Miscellaneous",
-    tags: ["custom", "unique", "editing"],
-    seller: "64fba9d64be2cf0a2e63c111",
-    media: {
-      coverImage: "/product2.jpg",
-      gallery: [
-        "https://source.unsplash.com/featured/?misc1",
-        "https://source.unsplash.com/featured/?misc2",
-        "https://source.unsplash.com/featured/?misc3"
-      ],
-      video: "",
-      pdfs: []
-    },
-    packages: [
-      {
-        name: "Custom",
-        description: "Flexible pricing and timelines",
-        price: 75,
-        deliveryTime: 4,
-        revisions: 2,
-        features: ["Creative effects", "Custom formats"]
-      }
-    ],
-    requirements: [
-      {
-        question: "Describe your custom video request",
-        type: "text",
-        required: true
-      }
-    ],
-    faq: []
-  }
-];
+// const Agigs = [
+//   {
+//     title: "Social Media Promo Videos",
+//     description: "Create eye-catching promos for Instagram and Facebook.",
+//     category: "Social & Marketing",
+//     tags: ["social", "promo", "instagram", "facebook"],
+//     seller: "64fba9d64be2cf0a2e63c111", // Replace with real seller ObjectId
+//     media: {
+//       coverImage: "/1.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?promo1",
+//         "https://source.unsplash.com/featured/?promo2",
+//         "https://source.unsplash.com/featured/?promo3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Basic",
+//         description: "1 short promo video",
+//         price: 30,
+//         deliveryTime: 2,
+//         revisions: 1,
+//         features: ["30s video", "Royalty-free music"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "What is your product or brand name?",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: [
+//       {
+//         question: "Can I use my own footage?",
+//         answer: "Yes, just upload it during order."
+//       }
+//     ]
+//   },
+//   {
+//     title: "Presenter Spokesperson Video",
+//     description: "Hire a professional presenter to explain your product or service.",
+//     category: "Presenter Videos",
+//     tags: ["spokesperson", "video", "explainer"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/presenter1.png",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?presenter1",
+//         "https://source.unsplash.com/featured/?presenter2",
+//         "https://source.unsplash.com/featured/?presenter3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Standard",
+//         description: "60s presenter video",
+//         price: 70,
+//         deliveryTime: 3,
+//         revisions: 2,
+//         features: ["HD video", "Script reading", "Green screen"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "Please upload your script.",
+//         type: "file",
+//         required: true
+//       }
+//     ],
+//     faq: [
+//       {
+//         question: "Do you provide script writing?",
+//         answer: "No, you must provide the script."
+//       }
+//     ]
+//   },
+//   {
+//     title: "Animated Explainer Videos",
+//     description: "2D animation explainer videos for startups and apps.",
+//     category: "Explainer Videos",
+//     tags: ["explainer", "2D", "animation"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/1a.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?explainer1",
+//         "https://source.unsplash.com/featured/?explainer2",
+//         "https://source.unsplash.com/featured/?explainer3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Premium",
+//         description: "90s animated explainer",
+//         price: 120,
+//         deliveryTime: 5,
+//         revisions: 3,
+//         features: ["Custom characters", "Voiceover", "Script"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "What’s your app/product about?",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   },
+//   {
+//     title: "Custom Logo Animation",
+//     description: "Professional logo animations in 24 hours.",
+//     category: "Animation",
+//     tags: ["logo", "animation", "branding"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/animation1.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?logo1",
+//         "https://source.unsplash.com/featured/?logo2",
+//         "https://source.unsplash.com/featured/?logo3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Basic",
+//         description: "Logo reveal animation",
+//         price: 25,
+//         deliveryTime: 1,
+//         revisions: 1,
+//         features: ["Transparent background", "1080p output"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "Upload your logo file",
+//         type: "file",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   },
+//   {
+//     title: "Product Showcase Video",
+//     description: "High-quality product demo videos with transitions and effects.",
+//     category: "Product Videos",
+//     tags: ["product", "demo", "showcase"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/product1.png",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?product1",
+//         "https://source.unsplash.com/featured/?product2",
+//         "https://source.unsplash.com/featured/?product3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Standard",
+//         description: "60s product video",
+//         price: 60,
+//         deliveryTime: 2,
+//         revisions: 2,
+//         features: ["Transitions", "Text overlays"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "Link to your product or product images",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   },
+//   {
+//     title: "Motion Graphics Intro",
+//     description: "Stylish and modern intros using After Effects.",
+//     category: "Motion Graphics",
+//     tags: ["motion", "intro", "after effects"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/motion1.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?motion1",
+//         "https://source.unsplash.com/featured/?motion2",
+//         "https://source.unsplash.com/featured/?motion3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Basic",
+//         description: "10s motion intro",
+//         price: 40,
+//         deliveryTime: 1,
+//         revisions: 1,
+//         features: ["Sound effects", "Modern design"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "What text or logo should appear in the intro?",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   },
+//   {
+//     title: "Cinematic Film Production",
+//     description: "End-to-end film production for commercials and short films.",
+//     category: "Filmed Video Production",
+//     tags: ["cinematic", "film", "shoot"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/film.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?film1",
+//         "https://source.unsplash.com/featured/?film2",
+//         "https://source.unsplash.com/featured/?film3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Premium",
+//         description: "Full production with editing",
+//         price: 300,
+//         deliveryTime: 10,
+//         revisions: 3,
+//         features: ["Crew", "Editing", "Color grading"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "Describe your film idea",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   },
+//   {
+//     title: "Unique Video Editing Requests",
+//     description: "Handling unique and out-of-the-box video projects.",
+//     category: "Miscellaneous",
+//     tags: ["custom", "unique", "editing"],
+//     seller: "64fba9d64be2cf0a2e63c111",
+//     media: {
+//       coverImage: "/product2.jpg",
+//       gallery: [
+//         "https://source.unsplash.com/featured/?misc1",
+//         "https://source.unsplash.com/featured/?misc2",
+//         "https://source.unsplash.com/featured/?misc3"
+//       ],
+//       video: "",
+//       pdfs: []
+//     },
+//     packages: [
+//       {
+//         name: "Custom",
+//         description: "Flexible pricing and timelines",
+//         price: 75,
+//         deliveryTime: 4,
+//         revisions: 2,
+//         features: ["Creative effects", "Custom formats"]
+//       }
+//     ],
+//     requirements: [
+//       {
+//         question: "Describe your custom video request",
+//         type: "text",
+//         required: true
+//       }
+//     ],
+//     faq: []
+//   }
+// ];
 
 
 
-  const handlePostAll = async () => {
-    for (const gig of Agigs) {
-      try {
-        await postGig(gig);
-        toast.success(`Posted gig: ${gig.title}`);
-      } catch (error) {
-        console.error("Error posting gig:", gig.title, error);
-        toast.error(`Failed to post gig: ${gig.title}`);
-      }
-    }}
+  // const handlePostAll = async () => {
+  //   for (const gig of Agigs) {
+  //     try {
+  //       await postGig(gig);
+  //       toast.success(`Posted gig: ${gig.title}`);
+  //     } catch (error) {
+  //       console.error("Error posting gig:", gig.title, error);
+  //       toast.error(`Failed to post gig: ${gig.title}`);
+  //     }
+  //   }}
 
     const handleClick = (id)=>{
 Router.push(`/categories/${id}`)
@@ -455,12 +455,12 @@ Router.push(`/categories/${id}`)
 
   return (
     <div className="min-h-screen bg-gray-50">
-        <button
+        {/* <button
       onClick={() => handlePostAll()}
       className="bg-blue-600 cursor-pointer hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
     >
       Post All Gigs
-    </button>
+    </button> */}
       {/* Enhanced Category Navigation */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">

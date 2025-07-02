@@ -107,6 +107,10 @@ const UserSchema = new mongoose.Schema(
       count: { type: Number, default: 0 },
     },
 
+    stripeAccountId: { type: String },             // seller ka Stripe connected account id
+    isStripeOnboarded: { type: Boolean, default: false }, // onboarding complete?
+
+
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
