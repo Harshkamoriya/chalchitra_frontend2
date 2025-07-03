@@ -18,12 +18,25 @@ const orderSchema = new mongoose.Schema({
     required: true,
   },
 
-  packageType: {
-    type: String,
-    enum: ["basic", "standard", "premium"],
-    required: true,
-  },
+selectedPackage: {
+  name: { type: String, required: true },
   price: { type: Number, required: true },
+  deliveryTime: { type: Number, required: true },
+  revisions: { type: Number, required: true },
+  features: [String],
+  rushDelivery: { type: Boolean, default: false },
+  rushTime: String,
+  rushPrice: Number,
+  inputLength: String,
+  outputLength: String,
+}
+,
+ispaid:{type:Boolean, default:false},
+  price: { type: Number, required: true },
+  addons: [{ id: String, price: Number , deliveryTime: String }], // e.g., [{ id: "addon1", price: 10, deliveryTime: 2 }]
+    dueDate: { type: Date, required: true },
+  createdAt: { type: Date, default: Date.now },
+  lastUpdate: { type: Date, default: Date.now },
 
   requirements: [
     {
@@ -38,6 +51,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: [
       "pending",
+      "awaiting_requirements",
       "in_progress",
       "delivered",
       "completed",
@@ -57,9 +71,7 @@ const orderSchema = new mongoose.Schema({
     deliveredAt: { type: Date },
   },
 
-  dueDate: { type: Date, required: true },
-  createdAt: { type: Date, default: Date.now },
-  lastUpdate: { type: Date, default: Date.now },
+
 
   // Extra fields for dashboard, analytics, filtering
   category: { type: String },  // e.g., "Graphic Design"

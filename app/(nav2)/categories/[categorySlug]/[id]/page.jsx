@@ -3,6 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import api from '@/lib/axios';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star,
@@ -29,6 +33,7 @@ import {
   Shield,
   TrendingUp
 } from 'lucide-react';
+import { useAuth } from '@/app/(nav2)/context/AuthContext';
 import { parseAppSegmentConfig } from 'next/dist/build/segment-config/app/app-segment-config';
 
 // Mock data - replace with actual API call
@@ -166,8 +171,12 @@ const GigPage= () => {
   const [mockGig , setMockGig] = useState(null);
   const [sellerId ,setSellerId]= useState(null);
   const [seller , setSeller] = useState(null);
- 
+   const router  = useRouter();
   const params  =useParams();
+  const {user} = useAuth();
+  let currentPackage ;
+  
+  console.log(user , "user in gig page");
 
   const id = params.id;
 
@@ -192,6 +201,8 @@ const addOnPrice = selectedAddOns.reduce((total, addOnId) => {
 return packagePrice + addOnPrice;
 
   };
+
+  
 
 
  useEffect(() => {
@@ -227,6 +238,37 @@ useEffect(() => {
 console.log(gig,"gig")
 
 
+const handleContinue = async () => {
+  try {
+    // Build order data
+    const orderData = {
+      gigId: gig?._id,
+      sellerId: seller?._id,
+      buyerId: user?.id,   // get from session/context
+      selectedPackage: gig?.packages[selectedPackage],
+      requirements: gig?.requirements,
+      addons: selectedAddOns,
+      price: calculateTotal()
+    };
+
+    const res =  await api.post(`/api/orders/pending_payment`, orderData)
+    if(res.data.success){
+      const orderId = res.data.orderId;
+      console.log("response  data , ", res.data)
+      if(orderId){
+        router.push(` /payment/${orderId}`)
+      }
+    }
+     else {
+      toast.error("Failed to create order");
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error("Something went wrong");
+  }
+};
+
+
   const getLevelBadge = (level) => {
     const badges = {
       new: { text: 'New Seller', color: 'bg-gray-100 text-gray-700' },
@@ -236,7 +278,7 @@ console.log(gig,"gig")
     };
     return badges[level] || badges.new;
   };
-let currentPackage ;
+
    if(gig){
        currentPackage = gig?.packages?.[selectedPackage];
 
@@ -640,6 +682,7 @@ let currentPackage ;
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      onClick={handleContinue}
                       className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                     >
                       Continue

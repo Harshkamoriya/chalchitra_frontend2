@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { connectToDB } from '@/lib/db';
-import Order from '@/models/Order';
+import Orders from '@/models/orders';
 import Transaction from '@/models/transaction';
 
 const stripe = new Stripe(process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY);
@@ -24,7 +24,7 @@ export async function POST(req) {
       const pi = event.data.object;
       const orderId = pi.metadata.orderId;
 
-      await Order.findByIdAndUpdate(orderId, { paymentStatus: 'succeeded' });
+      await Orders.findByIdAndUpdate(orderId, { paymentStatus: 'succeeded' });
       await Transaction.create({
         orderId,
         type: 'payment',
@@ -40,7 +40,7 @@ export async function POST(req) {
       const pi = event.data.object;
       const orderId = pi.metadata.orderId;
 
-      await Order.findByIdAndUpdate(orderId, { paymentStatus: 'failed' });
+      await Orders.findByIdAndUpdate(orderId, { paymentStatus: 'failed' });
       await Transaction.create({
         orderId,
         type: 'payment',
