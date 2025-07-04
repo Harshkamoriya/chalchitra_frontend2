@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import axios from "axios"
+import api from "@/lib/axios"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   DropdownMenu,
@@ -249,16 +250,9 @@ const limit = 10; // items per page
     const fetchOrders = async ()=>{
 
       try {
-        const token = sessionStorage.getItem("accessToken");
-        if(!token){
-          console.log("No access token found ")
-        }
+      
         setLoading(true);
-        const res = await axios.get(`/api/user/orders?role=seller&status=${activeTab}&page=${page}&limit=${limit}`,
-          {headers:{
-            "Authorization": `Bearer ${token}`
-          }}
-        );
+         const res = await api.get(`/api/user/orders?role=seller&status=${activeTab}&page=${page}&limit=${limit}`)
         const data  = res.data;
         if(data.success){
           setOrders(data.orders);
@@ -593,3 +587,4 @@ const limit = 10; // items per page
     </div>
   );
 }
+

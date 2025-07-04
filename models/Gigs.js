@@ -122,6 +122,14 @@ const faqSchema = new mongoose.Schema({
   answer: String,
 });
 
+const allowedTags = [
+  "intro", "outro", "logo animation", "color grading", "transitions",
+  "captions", "subtitles", "sound design", "green screen", "motion graphics",
+  "vfx", "slow motion", "timelapse", "3D", "2D animation",
+  "voiceover sync", "storyboarding", "youtube", "instagram", "tiktok",
+  "wedding", "gaming", "vlog", "product demo", "commercial", "corporate"
+];
+
 const gigSchema = new mongoose.Schema({
   title: { type: String, required: true },
   slug: { type: String, unique: true },
@@ -143,7 +151,11 @@ const gigSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
-  tags: [String],
+  
+tags: [{
+  type: String,
+  enum: allowedTags
+}],
   maxDuration: String,
   packages: [packageSchema],
   addOns: [addOnSchema],
