@@ -28,12 +28,13 @@ export const SocketProvider = ({ children}) => {
 
   const userId = user?.id; 
   console.log(userId ,"userid in socketcontext")
+  console.log(process.env.NEXT_PUBLIC_BACKEND_SERVER_BASE_URL , "BACKEND SERVER BASE URL")
 
   useEffect(() => {
     if (!user?.id) return;
-
+     
     // Connect to backend Socket.IO server
-    const socketInstance = io('http://localhost:4000', {
+    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_SERVER_BASE_URL, {
       query: { userId: user?.id }
     });
     setSocket(socketInstance);
