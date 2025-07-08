@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
           if (decoded.exp > now) {
             setAccessToken(token);
             setUser(decoded);
+            console.log(decoded,"decoded")
             Cookies.set("currentRole", decoded.role, { expires: 7, path: "/" });
           } else {
             sessionStorage.removeItem("accessToken");

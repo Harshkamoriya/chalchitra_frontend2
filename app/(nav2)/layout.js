@@ -23,19 +23,19 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-   
+              <AuthProvider>  
         <Providers>
           <AppContextProvider>
             <UserProvider>   
-              <AuthProvider>  
                 <Navbar />
                
           {children}
           <Footer />
-           </AuthProvider>
+          
           </UserProvider>
 
           </AppContextProvider>
+          
 
           {/* 🔥 Place ToastContainer once, near bottom of body */}
           <ToastContainer
@@ -50,6 +50,7 @@ export default function RootLayout({ children }) {
             theme="colored"
           />
         </Providers>
+         </AuthProvider>
     
   );
 }

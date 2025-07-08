@@ -26,6 +26,7 @@ export default function Home() {
       <HeroWrapper />
       <RoleSwitcher/>
       <About />
+      
       <Contact />
     </>
   );

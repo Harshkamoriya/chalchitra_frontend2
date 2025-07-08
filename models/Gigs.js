@@ -169,7 +169,7 @@ tags: [{
     count: { type: Number, default: 0 },
   },
   isFeatured: { type: Boolean, default: false },
-  status: { type: String, enum: ['active', 'paused', 'draft'], default: 'draft' },
+  status: { type: String, enum: ['published', 'paused', 'draft' , 'cancelled', 'under-eview', 'needs-changes'], default: 'draft' },
   createdAt: { type: Date, default: Date.now },
 });
 

@@ -13,7 +13,7 @@ import { Providers } from "@/providers/sessionProvider";
 import { useUserContext } from "./(nav2)/context/UserContext";
 import { UserProvider } from "./(nav2)/context/UserContext";
 import { AuthProvider } from "./(nav2)/context/AuthContext";
-
+import { SocketProvider } from "./(nav2)/context/SocketContext";
 
 const outfit = Outfit({ subsets: ["latin"], weight: ["300", "400", "500"] });
 
@@ -33,9 +33,12 @@ export default function RootLayout({ children }) {
         <Providers>
           <AppContextProvider>
             <UserProvider>   
-              <AuthProvider>     
+              <AuthProvider>  
+                  <SocketProvider>
+
                
           {children}
+          </SocketProvider>
           <Footer />
            </AuthProvider>
           </UserProvider>

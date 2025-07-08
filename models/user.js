@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    firstname:{type:String ,required:true},
-    lastname:{type:String ,required:true},
+    firstname:{type:String ,required:false},
+    lastname:{type:String ,required:false},
     displayName: { type: String }, // Optional: Public display name
 
     email: { type: String, required: true, unique: true },
@@ -84,7 +84,6 @@ const UserSchema = new mongoose.Schema(
       github: { type: String },
       website: { type: String },
     },
-
     phoneNumber: {
       type: String,
       required: function () {
@@ -96,6 +95,7 @@ const UserSchema = new mongoose.Schema(
         "Phone number must be in valid international format (E.164)",
       ],
     },
+
 
     phoneVerified: { type: Boolean, default: false },
     emailVerified: { type: Boolean, default: false }, // Email verified

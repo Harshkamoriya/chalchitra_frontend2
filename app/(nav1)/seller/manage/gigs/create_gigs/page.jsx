@@ -15,7 +15,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { Upload, X, Plus, Video, Clock, Star, Zap, Palette, Settings, TrendingUp, Info } from "lucide-react"
 import { HoverTooltip } from "@/components/hover-tooltip"
-import { TagAutocomplete } from "@/components/tag-autocomplete"
+// import { TagAutocomplete } from "@/components/tag-autocomplete"
+import TagAutocomplete from "@/components/TagAutocomplete"
 import { ProgressTabs } from "@/components/progress-tabs"
 import { createGig } from "./action"
 import { FileImage } from "lucide-react";
@@ -81,6 +82,14 @@ const [coverFile, setCoverFile] = useState(null);
 const [galleryFiles, setGalleryFiles] = useState([]);
 const [videoFile, setVideoFile] = useState(null);
 const router = useRouter();
+
+const allowedTags = [
+  "intro", "outro", "logo animation", "color grading", "transitions",
+  "captions", "subtitles", "sound design", "green screen", "motion graphics",
+  "vfx", "slow motion", "timelapse", "3D", "2D animation",
+  "voiceover sync", "storyboarding", "youtube", "instagram", "tiktok",
+  "wedding", "gaming", "vlog", "product demo", "commercial", "corporate"
+];
 
 const handleCoverChange = (e) => {
   setCoverFile(e.target.files[0]);
@@ -249,17 +258,37 @@ const handleVideoUpload = async (file) => {
       setFormErrors((prev) => ({ ...prev, [name]: null }))
     }
   }
+const addTag = (newTag) => {
+  const tag = newTag.trim().toLowerCase();
 
-  const addTag = () => {
-    if (currentTag.trim() && !tags.includes(currentTag.trim()) && tags.length < 5) {
-      setTags([...tags, currentTag.trim()])
-      setCurrentTag("")
-    }
+  // Always compare ignoring case
+  const matchedAllowedTag = allowedTags.find(t => t.toLowerCase() === tag);
+  if (!matchedAllowedTag) {
+    setFormErrors(prev => ({ ...prev, tags: `"${newTag}" is not an allowed tag.` }));
+    return;
   }
 
-  const removeTag = (tagToRemove) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
+  if (tags.includes(matchedAllowedTag)) {
+    setFormErrors(prev => ({ ...prev, tags: "Tag already added." }));
+    return;
   }
+
+  if (tags.length >= 5) {
+    setFormErrors(prev => ({ ...prev, tags: "You can add up to 5 tags only." }));
+    return;
+  }
+
+  setTags(prev => [...prev, matchedAllowedTag]);
+  setCurrentTag(""); // clear input
+  setFormErrors(prev => ({ ...prev, tags: null }));
+};
+
+
+
+const removeTag = (tagToRemove) => {
+  setTags(prev => prev.filter(tag => tag !== tagToRemove));
+  setFormErrors(prev => ({ ...prev, tags: null })); // optional: clear error on remove
+};
 
 
  
@@ -804,58 +833,48 @@ toast.error("Please fix the errors: Some required fields need your attention")
                     </div>
 
                     {/* Right Column */}
-                    <div className="space-y-10">
-                      <div className="space-y-4">
-                        <Label className="text-gray-800 font-semibold text-xl block">Search Tags *</Label>
-                        <p className="text-gray-600 text-sm mb-4">
-                          Add keywords that buyers would use to find your service. Use terms related to your style, platform, and content type.
-                        </p>
-                        <HoverTooltip
-                          content={{
-                            title: "Relevant Keywords & Tags",
-                            description:
-                              "Use tags that buyers would search for. Think about style, platform, and content type.",
-                            examples: ["youtube-editing", "cinematic", "color-grading"],
-                          }}
-                        >
-                          <div>
-                            <TagAutocomplete
-                              value={currentTag}
-                              onChange={setCurrentTag}
-                              onAdd={addTag}
-                              disabled={tags.length >= 5}
-                              placeholder="e.g., youtube-editing, cinematic, color-grading"
-                              className={cn(
-                                "h-14 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-lg",
-                                formErrors.tags && "border-red-500"
-                              )}
-                            />
-                          </div>
-                        </HoverTooltip>
-                        {formErrors.tags && <p className="text-red-500 text-sm mt-2">{formErrors.tags}</p>}
+                     <div className="space-y-10">
+      <div className="space-y-4">
+        <label className="text-gray-800 font-semibold text-xl block">Search Tags *</label>
+        <p className="text-gray-600 text-sm mb-4">
+          Add keywords buyers would use to find your service.
+        </p>
+        <TagAutocomplete
+        allowedTags={allowedTags}
+          value={currentTag}
+          onChange={setCurrentTag}
+          onAdd={addTag}
+          disabled={tags.length >= 5}
+          placeholder="e.g., youtube, cinematic, color grading"
+        />
+        {formErrors.tags && <p className="text-red-500 text-sm mt-2">{formErrors.tags}</p>}
 
-                        <div className="flex flex-wrap gap-3 mt-6">
-                          {tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 text-base font-medium rounded-full"
-                            >
-                              {tag}
-                              <X className="h-4 w-4 cursor-pointer hover:text-blue-900" onClick={() => removeTag(tag)} />
-                            </Badge>
-                          ))}
-                        </div>
+        <div className="flex flex-wrap gap-3 mt-6">
+          {tags.map(tag => (
+            <span
+              key={tag}
+              className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 text-base font-medium rounded-full"
+            >
+              {tag.replace(/\b\w/g, l => l.toUpperCase())}
+              <svg
+                onClick={() => removeTag(tag)}
+                className="h-4 w-4 cursor-pointer hover:text-blue-900"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </span>
+          ))}
+        </div>
 
-                        <p className="text-sm text-gray-500 mt-4 flex items-center gap-2">
-                          <span className="font-medium">{tags.length}/5 tags</span>
-                          <span>•</span>
-                          <span>Tags help buyers find your gig</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
+        <p className="text-sm text-gray-500 mt-4 flex items-center gap-2">
+          <span className="font-medium">{tags.length}/5 tags</span>
+          <span>•</span>
+          <span>Tags help buyers find your gig</span>
+        </p>
+      </div>
+    </div>
+    </div>
                   {/* Full Width Description */}
                   <div className="mt-12 space-y-4">
                     <Label className="text-gray-800 font-semibold text-xl block">Service Description *</Label>
