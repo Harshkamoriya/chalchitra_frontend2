@@ -20,9 +20,15 @@ const MessageSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+status:{
+  type:String,
+  enum:['read' ,'delivered' ,'sent'],
+  default:'sent'
+},  // <-- missing comma!
+
   type: {
     type: String,
-    enum: ['text', 'file', 'image'],
+    enum: ['text', 'file', 'image','video'],
     default: 'text'
   },
   fileName: {
@@ -49,6 +55,9 @@ const MessageSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  isDeleted: { type: Boolean, default: false },
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+
   createdAt: {
     type: Date,
     default: Date.now

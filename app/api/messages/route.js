@@ -55,6 +55,7 @@ export async function POST(request) {
     const content = formData.get('content');
     const type = formData.get('type') || 'text';
     const file = formData.get('file');
+    const fileUrl = formData.get('fileUrl');
 
     console.log('[POST] Parsed fields:', {
       conversationId,
@@ -62,11 +63,12 @@ export async function POST(request) {
       receiverId,
       content,
       type,
-      file: file ? { name: file.name, size: file.size } : null
+      file: file ? { name: file.name, size: file.size } : null,
+      fileUrl:fileUrl ? fileUrl :null
     });
 
     // Handle file upload if present
-    let fileUrl = null;
+    // let fileUrl = null;
     let fileName = null;
     let fileSize = null;
 

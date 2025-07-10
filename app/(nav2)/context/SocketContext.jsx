@@ -67,6 +67,7 @@ export const SocketProvider = ({ children}) => {
       setUnreadCount(prev => ({ ...prev, messages: prev.messages + 1 }));
     });
 
+
     // Load initial data from backend REST API
     // fetchNotifications();
     fetchConversations();
@@ -148,7 +149,7 @@ export const SocketProvider = ({ children}) => {
   };
 
   // Send message & emit to socket
- const sendMessage = async (conversationId, content, senderId, receiverId, type = 'text', file = null) => {
+ const sendMessage = async (conversationId, content, senderId, receiverId, type = 'text', file = null,fileUrl) => {
   try {
     const formData = new FormData();
     formData.append('conversationId', conversationId);
@@ -157,6 +158,7 @@ export const SocketProvider = ({ children}) => {
     formData.append('receiverId', receiverId);    // 👈 add this
     formData.append('type', type);
     if (file) formData.append('file', file);
+    if(fileUrl)formData.append('fileUrl', fileUrl)
 
     const response = await fetch('/api/messages', {
       method: 'POST',
@@ -176,7 +178,58 @@ export const SocketProvider = ({ children}) => {
     console.error('❌ Error sending message:', error);
   }
 };
-  const value = {
+
+
+const handleDelete = async (messageId , conversationId) => {
+  try {
+    await fetch(`/api/messages/${conversationId}?messageId=
+      
+      ${messageId}`, { method: "PATCH" });
+    // local update
+    setMessages(prev =>
+      prev.map(m => m._id === messageId ? { ...m, isDeleted: true } : m)
+    );
+    // emit socket event
+    socket.emit('delete-message', messageId);
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
+};
+
+const handleEdit = async (messageId) => {
+  try {
+    const res = await fetch(`/api/messages/options/${messageId}/edit`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editDraft })
+    });
+    const { message } = await res.json();
+    setMessages(prev => prev.map(m => m._id === messageId ? message : m));
+    setEditing(null);
+  } catch (err) {
+    console.error('Edit failed', err);
+  }
+};
+
+useEffect(() => {
+  if (!socket) return;
+
+  const onMessageDeleted = (messageId) => {
+    setMessages(prev =>
+      prev.map(m => m._id === messageId ? { ...m, isDeleted: true } : m)
+    );
+  };
+
+  socket.on('message-deleted', onMessageDeleted);
+
+  return () => socket.off('message-deleted', onMessageDeleted);
+  socket.on('message-edited', updatedMsg => {
+  setMessages(prev => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m));
+});
+}, [socket]);
+
+
+const value = {
     socket,
     isConnected,
     notifications,
@@ -190,6 +243,8 @@ export const SocketProvider = ({ children}) => {
     deleteNotification,
     sendMessage,
     fetchMessages,
+    handleDelete,
+    handleEdit
      
     
     // fetchNotifications,

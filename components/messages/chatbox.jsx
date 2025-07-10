@@ -120,7 +120,6 @@
 //   const messagesEndRef = useRef(null);
 //   const { messages , setMessages, fetchMessages , sendMessage } = useSocket();
 
-
 //   // Fetch conversation object if not provided
 //   useEffect(() => {
 //     if (!conversation && conversationId) {
@@ -152,9 +151,8 @@
 //       console.log(messages , "messages ")
 //       console.log(conversationId , "conversationId")
 //       fetchMessages(conversation ? conversation?._id : conversationId);
-    
-//   }, [conversationId , conversation]);
 
+//   }, [conversationId , conversation]);
 
 //   // Find other user when conversation updates
 // // useEffect(() => {
@@ -178,7 +176,6 @@
 // //     fetchOther();
 // //   }
 // // }, [conversation]);
-
 
 //   // Init socket
 //   // useEffect(() => {
@@ -224,8 +221,6 @@
 //   //   setNewMsg('');
 //   // };
 
-  
-
 // const handleSend = async () => {
 //   if (!newMsg.trim() || !conversation || !otherUser?._id) {
 //     console.log("[ChatBox] Cannot send: message empty or missing data");
@@ -240,7 +235,6 @@
 //     'text'
 //   );
 
-
 //   // Optionally local state me bhi add kar de
 //   setMessages(prev => [...prev, {
 //     conversationId: conversation._id || conversationId,
@@ -252,7 +246,6 @@
 //   }]);
 //   setNewMsg('');
 // };
-  
 
 //  console.log(messages ," messages after sending")
 //   return (
@@ -272,7 +265,7 @@
 //             </div>
 //             <div className="text-right text-xs text-gray-500">
 //               <div className="font-medium">{otherUser?.level || 'Level 1'}</div>
-              
+
 //             </div>
 //           </div>
 
@@ -310,130 +303,320 @@
 //   );
 // }
 
-
-'use client';
-import { useEffect, useState, useRef } from 'react';
-import { Send, Paperclip } from 'lucide-react';
+// ChatBox.jsx
+"use client";
+import { useEffect, useState, useRef } from "react";
+import { Send, Paperclip } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import getOtherUser from '@/lib/realtime/getOther';
-import { useSocket } from '@/app/(nav2)/context/SocketContext';
+import getOtherUser from "@/lib/realtime/getOther";
+import { useSocket } from "@/app/(nav2)/context/SocketContext";
 
-export default function ChatBox({ conversationId, selectedConversation, currentUserId }) {
-  const [conversation, setConversation] = useState(selectedConversation || null);
+export default function ChatBox({
+  conversationId,
+  selectedConversation,
+  currentUserId,
+}) {
+  const [conversation, setConversation] = useState(
+    selectedConversation || null
+  );
   const [otherUser, setOtherUser] = useState(null);
-  const [newMsg, setNewMsg] = useState('');
+  const [newMsg, setNewMsg] = useState("");
+  const [file, setFile] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editDraft, setEditDraft] = useState("");
   const messagesEndRef = useRef(null);
-  const { messages, setMessages, fetchMessages, sendMessage } = useSocket();
 
-  // 🔹 Fetch conversation object if not passed
+  const {
+    socket,
+    messages,
+    setMessages,
+    fetchMessages,
+    sendMessage,
+    handleDelete,
+  } = useSocket();
+
+  // Fetch conversation details
   useEffect(() => {
     if (!conversation && conversationId) {
-      const fetchConversation = async () => {
-        try {
-          const res = await fetch(`/api/conversations/${conversationId}?currentUserId=${currentUserId}`);
-          const data = await res.json();
-          if (data.success && data.conversation) {
-            setConversation(data.conversation);
-            if (data.receiver) {
-              setOtherUser(data.receiver);
-            }
-          }
-        } catch (error) {
-          console.error("[ChatBox] Failed to fetch conversation:", error);
+      (async () => {
+        const res = await fetch(
+          `/api/conversations/${conversationId}?currentUserId=${currentUserId}`
+        );
+        const data = await res.json();
+        if (data.success) {
+          setConversation(data.conversation);
+          setOtherUser(data.receiver);
         }
-      };
-      fetchConversation();
+      })();
     }
   }, [conversation, conversationId, currentUserId]);
 
-  // 🔹 Fetch messages for this conversation
+  // Fetch messages
   useEffect(() => {
-    if (conversationId) {
-      fetchMessages(conversationId);
-    }
+    if (conversationId) fetchMessages(conversationId);
   }, [conversationId]);
 
-  // 🔹 Scroll to bottom when messages change
+  // Scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // ✏ Handle send message
-  const handleSend = async () => {
-    if (!newMsg.trim() || !conversation || !otherUser?._id) {
-      console.warn("[ChatBox] Cannot send: empty msg or missing data");
-      return;
-    }
+  // Listen for real-time edits
+  useEffect(() => {
+    if (!socket) return;
+    const onMessageEdited = (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === updatedMsg._id ? updatedMsg : m))
+      );
+    };
+    socket.on("message-edited", onMessageEdited);
+    return () => socket.off("message-edited", onMessageEdited);
+  }, [socket]);
 
-    await sendMessage(
-      conversation._id || conversationId,
-      newMsg,
-      currentUserId,
-      otherUser._id,
-      'text'
+  // Upload helper
+  const uploadToCloudinary = async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
     );
-
-    // Optimistic add in local state
-    setMessages(prev => [
-      ...prev,
-      {
-        conversationId: conversation._id || conversationId,
-        content: newMsg,
-        senderId: currentUserId,
-        receiverId: otherUser._id,
-        type: 'text',
-        createdAt: new Date().toISOString()
-      }
-    ]);
-    setNewMsg('');
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
+      { method: "POST", body: fd }
+    );
+    return res.json();
   };
 
-  // ✅ Filter messages by this conversation & sort oldest→newest
-  console.log(messages ,"messages")
-  const filteredMessages = (messages || [])
-    .filter(msg => msg.conversationId === (conversation?._id || conversationId))
+  // Send or upload + send
+  const handleSend = async () => {
+    if (!newMsg.trim() && !file) return;
+    const optimisticId = Date.now();
+    let type = "text",
+      fileUrl = null,
+      content = newMsg;
+    // optimistic
+    setMessages((prev) => [
+      ...prev,
+      {
+        _id: optimisticId,
+        conversationId,
+        sender: currentUserId,
+        receiver: otherUser._id,
+        type: file ? "file" : "text",
+        content: file ? file.name : newMsg,
+        fileUrl: null,
+        uploading: !!file,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+
+    try {
+      if (file) {
+        const data = await uploadToCloudinary(file);
+        fileUrl = data.secure_url;
+        if (data.format === "pdf") type = "file";
+        else if (data.resource_type === "image") type = "image";
+        else if (data.resource_type === "video") type = "video";
+        else type = "file";
+      }
+      const saved = await sendMessage(
+        conversationId,
+        content || file.name,
+        currentUserId,
+        otherUser._id,
+        type,
+        null,
+        fileUrl
+      );
+      setMessages((prev) => [
+        ...prev.filter((m) => m._id !== optimisticId),
+        saved,
+      ]);
+    } catch {}
+    setNewMsg("");
+    setFile(null);
+  };
+
+  // Edit handler
+  const saveEdit = async (id) => {
+    if (!editDraft.trim()) return;
+    const res = await fetch(`/api/messages/edit`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: editDraft.trim(), messageId: id }),
+    });
+    const { message: plainMessage } = await res.json();
+    setMessages((prev) => prev.map((m) => (m._id === id ? plainMessage : m)));
+    socket.emit("edit-message", plainMessage);
+    setEditingMessageId(null);
+  };
+
+  // Filter + sort
+  const filtered = (messages || [])
+    .filter((m) => m.conversationId === conversationId)
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-
-console.log(filteredMessages ,"fliteredmessages")
-
 
   return (
     <>
+      {" "}
       {otherUser ? (
         <>
           {/* Header */}
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm">
-                {otherUser?.name?.charAt(0) || "?"}
+              <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
+                {otherUser.name[0]}
               </div>
               <div>
                 <div className="font-semibold">
-                  {otherUser?.name}
-                  <span className="text-gray-400 text-xs"> @{otherUser?.displayName}</span>
+                  {otherUser.name}{" "}
+                  <span className="text-gray-400 text-xs">
+                    @{otherUser.displayName}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-500">
-                  Last seen {new Date(otherUser?.lastSeen || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  Last seen{" "}
+                  {new Date(
+                    otherUser.lastSeen || Date.now()
+                  ).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </div>
               </div>
             </div>
-            <div className="text-right text-xs text-gray-500">
-              <div className="font-medium">{otherUser?.level || 'Level 1'}</div>
+            <div className="text-xs text-gray-500">
+              Level {otherUser.level || 1}
             </div>
           </div>
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {filteredMessages.map((msg) => (
-              <div key={msg?._id} className={`flex ${msg?.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}>
-                <div className={`px-3 py-2 rounded-xl text-sm max-w-[70%]
-                  ${msg?.senderId === currentUserId ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                  {msg?.content}
+            {filtered.map((msg) => {
+              const isSender =
+                msg.sender === currentUserId || msg.senderId === currentUserId;
+              return (
+                <div
+                  key={msg._id}
+                  className={`group relative flex ${isSender ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`px-3 py-2 rounded-xl text-sm max-w-[70%] ${isSender ? "bg-purple-500 text-white" : "bg-gray-100 text-gray-900"}`}
+                  >
+                    {msg.uploading ? (
+                      <span className="italic">Uploading…</span>
+                    ) : msg.isDeleted ? (
+                      <span className="italic text-gray-400">
+                        This message was deleted
+                      </span>
+                    ) : editingMessageId === msg._id ? (
+                      <div className="flex gap-1">
+                        <Input
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button size="sm" onClick={() => saveEdit(msg._id)}>
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setEditingMessageId(null)}
+                        >
+                          ✖️
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* text */}
+                        {msg.type === "text" && <span>{msg.content}</span>}
+                        {msg.isEdited && (
+                          <em className="ml-1 text-xs">(edited)</em>
+                        )}
+                        {/* image/video/file */}
+                        {msg.type === "image" && msg.fileUrl && (
+                          <img
+                            src={msg.fileUrl}
+                            className="rounded-md object-cover max-w-[250px] max-h-[250px]"
+                          />
+                        )}
+                        {msg.type === "video" && msg.fileUrl && (
+                          <video
+                            src={msg.fileUrl}
+                            controls
+                            className="rounded-md object-cover max-w-[250px] max-h-[250px]"
+                          />
+                        )}
+                        {msg.type === "file" && msg.fileUrl && (
+                          <a href={msg.fileUrl} download className="underline">
+                            📎 {msg.content || "Download"}
+                          </a>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Hover menu */}
+                  <div
+                    key={msg._id}
+                    className="relative flex items-start group mb-2"
+                  >
+                    {/* Message bubble */}
+                    {/* <div
+                      className={`px-3 py-2 rounded-xl text-sm max-w-[70%]
+        ${isSender ? "bg-purple-500 text-white ml-auto" : "bg-gray-100 text-gray-900 mr-auto"}`}
+                    >
+                    </div> */}
+
+                    {/* Side action menu */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex flex-col text-xs space-y-1 ml-2">
+                      {/* only show delete/edit on your own messages */}
+                      {isSender && !msg.isDeleted && (
+                        <button
+                          onClick={() => handleDelete(msg._id)}
+                          className="bg-white rounded px-2 py-1 hover:bg-red-50 text-red-500 border border-red-200"
+                        >
+                          Delete
+                        </button>
+                      )}
+                      {isSender && !msg.isDeleted && (
+                        <button
+                          onClick={() => {
+                            setEditingMessageId(msg._id);
+                            setEditDraft(msg.content || "");
+                          }}
+                          className="bg-white rounded px-2 py-1 hover:bg-blue-50 text-blue-500 border border-blue-200"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {msg.type === "text" && (
+                        <button
+                          onClick={() =>
+                            navigator.clipboard.writeText(msg.content)
+                          }
+                          className="bg-white rounded px-2 py-1 hover:bg-gray-50 text-gray-600 border border-gray-200"
+                        >
+                          Copy
+                        </button>
+                      )}
+                      {msg.fileUrl && (
+                        <a
+                          href={msg.fileUrl}
+                          download
+                          className="bg-white rounded px-2 py-1 hover:bg-gray-50 text-gray-600 border border-gray-200"
+                        >
+                          Download
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             <div ref={messagesEndRef} />
           </div>
 
@@ -443,10 +626,24 @@ console.log(filteredMessages ,"fliteredmessages")
               value={newMsg}
               onChange={(e) => setNewMsg(e.target.value)}
               placeholder="Type message..."
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
-            <Button variant="secondary"><Paperclip size={18} /></Button>
-            <Button onClick={handleSend}><Send size={18} /></Button>
+            <div className="relative">
+              <input
+                type="file"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+              <Button type="button" variant="secondary">
+                <Paperclip size={18} />
+              </Button>
+            </div>
+            {file && (
+              <div className="text-xs text-gray-500">Selected: {file.name}</div>
+            )}
+            <Button onClick={handleSend}>
+              <Send size={18} />
+            </Button>
           </div>
         </>
       ) : (
