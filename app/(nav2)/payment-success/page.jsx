@@ -102,25 +102,7 @@ export default function PaymentSuccess() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CC</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">ChalChitra</span>
-            </div>
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
-            >
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </button>
-          </div>
-        </div>
-      </div>
+     
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Success Header */}

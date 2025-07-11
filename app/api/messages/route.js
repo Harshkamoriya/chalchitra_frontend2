@@ -31,6 +31,7 @@ export async function GET(req ) {
       return total + (conv.unreadCount.get(userId) || 0);
     }, 0);
 
+    console.log(conversations, "conversations")
     return NextResponse.json({ 
       conversations,
       unreadCount 
@@ -87,17 +88,20 @@ export async function POST(request) {
   type,
   fileName,
   fileUrl,
-  fileSize
+  fileSize,
+  status:'sent'
 });
 
     console.log('[POST] Saving message to DB...');
     await message.save();
 
 const plainMessage = message.toObject();
+plainMessage.conversationId = message.conversationId.toString();
 plainMessage.receiver = message.receiver.toString();
 plainMessage.sender = message.sender.toString();
 
-    console.log('[POST] Message saved successfully ✅');
+    console.log('[POST] Message saved successfully ✅' , plainMessage);
+    
 
     return NextResponse.json({ success: true, plainMessage });
   } catch (error) {

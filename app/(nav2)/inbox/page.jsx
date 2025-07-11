@@ -49,6 +49,8 @@ export default function InboxPage() {
     }
   }, [currentUserId]);
 
+  console.log(otherUsers ,"otherusers")
+
   // Auto-select conversation by conv_id in URL
   useEffect(() => {
     if (conversation_id && conversations.length) {

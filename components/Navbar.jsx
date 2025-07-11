@@ -116,12 +116,6 @@ const Navbar = () => {
 
   const isLoggedIn = !!user;
 
-  // const role = Cookies.get("currentRole"); // ✅ Correct usage
-
-  // if(role === "seller"){
-  //   return <TopNavbar/>
-  // }
-
   return (
     <>
       <SocketProvider user={user}>
@@ -151,7 +145,7 @@ const Navbar = () => {
               <div className="hidden md:flex items-center space-x-6">
                 <div className="cursor-pointer px-3 py-1 rounded-md transition-colors group">
                   <Link href="/become_seller">
-                    <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200">
+                    <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200 font-medium">
                       Become a Seller
                     </p>
                   </Link>
@@ -161,19 +155,19 @@ const Navbar = () => {
                   <>
                     <a
                       href="/about"
-                      className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                      className="text-gray-700 hover:text-purple-600 transition-colors font-medium text-base"
                     >
                       About
                     </a>
                     <Button
                       variant="ghost"
-                      className="text-gray-700 hover:text-purple-600 hover:bg-purple-50"
+                      className="text-gray-700 hover:text-purple-600 hover:bg-purple-50 font-medium text-base px-4 py-2"
                       onClick={() => handleAuthClick("signin")}
                     >
                       Login
                     </Button>
                     <Button
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 font-medium text-base"
                       onClick={() => handleAuthClick("signup")}
                     >
                       Join
@@ -181,12 +175,7 @@ const Navbar = () => {
                   </>
                 ) : (
                   <>
-                    <div
-                      className="relative "
-                      // onClick={() => {
-                      //   setIsMessageModalOpen(!isMessageModalOpen);
-                      // }}
-                    >
+                    <div className="relative">
                       <button
                         onClick={() => setIsMessageOpen(true)}
                         className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -204,25 +193,9 @@ const Navbar = () => {
                         isOpen={isMessageOpen}
                         setIsOpen={setIsMessageOpen}
                       />
-
-                      {/* Pass controlled props */}
-                      {/* <MessageDropdown
-                      isOpen={isMessageOpen}
-                      setIsOpen={setIsMessageOpen}
-                    /> */}
-                      {/* {mockMessages > 0 && (
-                      <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center p-0">
-                        {mockMessages}
-                      </Badge>
-                    )} */}
                     </div>
 
-                    <div
-                      className="relative cursor-pointer "
-                      // onClick={() => {
-                      //   setIsMessageModalOpen(!isMessageModalOpen);
-                      // }}
-                    >
+                    <div className="relative cursor-pointer">
                       <button
                         onClick={() =>
                           setIsNotificationOpen(!isNotificationOpen)
@@ -248,7 +221,7 @@ const Navbar = () => {
 
                     <div className="cursor-pointer px-3 py-1 rounded-md transition-colors group">
                       <Link href="/earning-mode">
-                        <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200">
+                        <p className="text-gray-700 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r from-purple-600 to-pink-600 transition-all duration-200 font-medium">
                           Start Earning
                         </p>
                       </Link>
@@ -387,11 +360,6 @@ const Navbar = () => {
                                 setIsOpen={setIsNotificationOpen}
                               />
                             </div>
-                            {/* {mockNotifications > 0 && (
-                            <Badge className="bg-red-500 text-white">
-                              {mockNotifications}
-                            </Badge>
-                          )} */}
                           </div>
 
                           <div
@@ -408,11 +376,6 @@ const Navbar = () => {
                                 setIsOpen={setIsMessageOpen}
                               />
                             </div>
-                            {/* {mockMessages > 0 && (
-                            <Badge className="bg-red-500 text-white">
-                              {mockMessages}
-                            </Badge>
-                          )} */}
                           </div>
 
                           <div className="flex items-center space-x-3 py-2">

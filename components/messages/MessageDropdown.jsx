@@ -59,6 +59,7 @@ const MessageDropdown = ({ isOpen, setIsOpen }) => {
    const handleSelectConversation = (conv) => {
     console.log('[Click] Conversation clicked:', conv);
     setSelectedConversation(conv);
+    console.log(conv?._id , " conversation id in the msd")
     router.push(`/inbox?conv_id=${conv?._id}`)
   };
 

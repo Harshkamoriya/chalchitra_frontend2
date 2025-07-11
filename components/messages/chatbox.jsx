@@ -320,12 +320,17 @@ export default function ChatBox({
   const [conversation, setConversation] = useState(
     selectedConversation || null
   );
-  const [otherUser, setOtherUser] = useState(null);
+
+
+  const [otherUser, setOtherUser] = useState();
   const [newMsg, setNewMsg] = useState("");
   const [file, setFile] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const messagesEndRef = useRef(null);
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+
+
 
   const {
     socket,
@@ -334,33 +339,63 @@ export default function ChatBox({
     fetchMessages,
     sendMessage,
     handleDelete,
+    emitTyping,
+    typingUsers,
+    isTyping
   } = useSocket();
 
-  // Fetch conversation details
-  useEffect(() => {
-    if (!conversation && conversationId) {
-      (async () => {
-        const res = await fetch(
-          `/api/conversations/${conversationId}?currentUserId=${currentUserId}`
-        );
+  console.log(conversationId , "conversationId")
+  console.log(conversation, "conversation in chatbox")
+
+useEffect(() => {
+  if (selectedConversation && currentUserId) {
+   (async () => {
+  const other = await getOtherUser(selectedConversation.participants, currentUserId);
+  console.log("[getOtherUser] resolved:", other);
+  setOtherUser(other);
+})();
+    setConversation(selectedConversation); 
+  }
+}, [selectedConversation, currentUserId]);
+
+
+useEffect(() => {
+  console.log("📦 conversationId changed or selectedConversation missing:", conversationId, selectedConversation);
+  if (!selectedConversation && conversationId) {
+    (async () => {
+      try {
+        console.log("🔄 Fetching conversation from API...");
+        const res = await fetch(`/api/conversations/${conversationId}?currentUserId=${currentUserId}`);
         const data = await res.json();
+        console.log("✅ API response:", data);
         if (data.success) {
           setConversation(data.conversation);
           setOtherUser(data.receiver);
+          console.log("✅ conversation set from API:", data.conversation);
+          console.log("✅ otherUser set from API:", data.receiver);
+        } else {
+          console.warn("⚠️ API call failed:", data);
         }
-      })();
-    }
-  }, [conversation, conversationId, currentUserId]);
+      } catch (err) {
+        console.error("❌ Error fetching conversation:", err);
+      }
+    })();
+  }
+}, [selectedConversation, conversationId, currentUserId]);
 
-  // Fetch messages
-  useEffect(() => {
-    if (conversationId) fetchMessages(conversationId);
-  }, [conversationId]);
+useEffect(() => {
+  console.log("💬 conversationId changed, fetching messages:", conversationId);
+  if (conversationId) {
+    fetchMessages(conversationId);
+  }
+}, [conversationId, fetchMessages]);
+
+
 
   // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // }, [messages]);
 
   // Listen for real-time edits
   useEffect(() => {
@@ -408,6 +443,7 @@ export default function ChatBox({
         content: file ? file.name : newMsg,
         fileUrl: null,
         uploading: !!file,
+        status:'sent',
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -428,12 +464,18 @@ export default function ChatBox({
         otherUser._id,
         type,
         null,
-        fileUrl
+        fileUrl,
+        status
       );
-      setMessages((prev) => [
-        ...prev.filter((m) => m._id !== optimisticId),
-        saved,
-      ]);
+     if(saved){
+       setMessages((prev) =>
+  prev.map((m) => m._id === optimisticId ? saved : m)
+)
+     }
+
+     console.log("saved message:", saved);
+console.log("saved.conversationId:", saved.conversationId, typeof saved.conversationId);
+console.log("conversation._id:", conversation?._id, typeof conversation?._id);
     } catch {}
     setNewMsg("");
     setFile(null);
@@ -454,9 +496,26 @@ export default function ChatBox({
   };
 
   // Filter + sort
-  const filtered = (messages || [])
-    .filter((m) => m.conversationId === conversationId)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+// const filtered = (messages || []).filter(
+//   (m) => String(m.conversationId) == String(conversationId)
+// );
+
+const filtered = messages.filter(
+  (m) => m.conversationId === conversation?._id
+);
+
+// console.log(filtered , "filtered ")
+// console.log(messages , "messages")
+
+// console.log("🔍 Rendering ChatBox:");
+// console.log("conversationId prop:", conversationId);
+// console.log("conversation state:", conversation);
+// console.log("selectedConversation prop:", selectedConversation);
+// console.log("otherUser state:", otherUser);
+
+
+
+
 
   return (
     <>
@@ -467,24 +526,31 @@ export default function ChatBox({
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-                {otherUser.name[0]}
+                {otherUser?.name?.[0] || '?'}
+
               </div>
               <div>
                 <div className="font-semibold">
-                  {otherUser.name}{" "}
+                  {otherUser?.name}{" "}
                   <span className="text-gray-400 text-xs">
-                    @{otherUser.displayName}
+                    @{otherUser?.displayName}
                   </span>
                 </div>
                 <div className="text-xs text-gray-500">
                   Last seen{" "}
                   {new Date(
-                    otherUser.lastSeen || Date.now()
+                    otherUser?.lastSeen || Date.now()
                   ).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                 </div>
+              {isTyping && (
+  <div className="text-xs text-purple-500 mt-1 animate-pulse">
+    Typing...
+  </div>
+)}
+
               </div>
             </div>
             <div className="text-xs text-gray-500">
@@ -612,6 +678,14 @@ export default function ChatBox({
                           Download
                         </a>
                       )}
+                     {(msg.sender === currentUserId || msg.senderId === currentUserId) && (
+  <>
+    {msg.status === 'sending' && <span className="text-[10px] ml-1">🕓 Sending</span>}
+    {msg.status === 'sent' && <span className="text-[10px] ml-1">✔ Sent</span>}
+    {msg.status === 'delivered' && <span className="text-[10px] ml-1">✔✔ Delivered</span>}
+    {msg.status === 'read' && <span className="text-[10px] ml-1 text-blue-500">✔✔ Read</span>}
+  </>
+)}
                     </div>
                   </div>
                 </div>
@@ -624,7 +698,12 @@ export default function ChatBox({
           <div className="p-3 border-t flex items-center gap-2">
             <Input
               value={newMsg}
-              onChange={(e) => setNewMsg(e.target.value)}
+              onChange={(e) => {
+                setNewMsg(e.target.value);
+                console.log(otherUser?._id , "inside onchange")
+                emitTyping(otherUser?._id); // call from context
+                    }}
+              
               placeholder="Type message..."
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
             />
