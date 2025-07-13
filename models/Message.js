@@ -57,6 +57,8 @@ status:{
   },
   isDeleted: { type: Boolean, default: false },
   replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+  forwardedFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+
 
   createdAt: {
     type: Date,

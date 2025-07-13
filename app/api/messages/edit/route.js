@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDB }  from '@/lib/db';
 import Message  from '@/models/Message';
+import { authenticateUser } from '@/middlewares/auth';
 
 export async function PATCH(req, { params }) {
   try {
@@ -28,5 +29,32 @@ const { content, messageId } = JSON.parse(raw);
   } catch (err) {
     console.error('[Edit message] Error:', err);
     return NextResponse.json({ success: false, error: 'Failed to edit' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await connectToDB();
+    const {user}  = await authenticateUser(req);
+    if(!user){
+      return NextResponse.json({success:false , status:401})
+    }
+
+    const { messageId } = await req.json();
+
+    if (!messageId) {
+      return NextResponse.json({ success: false, error: 'Message ID required' }, { status: 400 });
+    }
+
+    const deletedMessage = await Message.findByIdAndUpdate(
+      messageId,
+      { isDeleted: true },
+      { new: true }  // <-- return the updated message
+    );
+
+    return NextResponse.json({ success: true, message: deletedMessage });
+  } catch (err) {
+    console.error('[Delete message] Error:', err);
+    return NextResponse.json({ success: false, error: 'Failed to delete message' }, { status: 500 });
   }
 }

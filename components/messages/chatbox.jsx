@@ -304,13 +304,25 @@
 // }
 
 // ChatBox.jsx
+
+
+
 "use client";
+
+import api from "@/lib/axios";
 import { useEffect, useState, useRef } from "react";
 import { Send, Paperclip } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import getOtherUser from "@/lib/realtime/getOther";
 import { useSocket } from "@/app/(nav2)/context/SocketContext";
+import { useAuth } from "@/app/(nav2)/context/AuthContext";
+import { Sheet } from "../ui/sheet";
+import { SheetContent } from "../ui/sheet";
+import { SheetTitle } from "@/components/ui/sheet";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+
+
 
 export default function ChatBox({
   conversationId,
@@ -328,8 +340,14 @@ export default function ChatBox({
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editDraft, setEditDraft] = useState("");
   const messagesEndRef = useRef(null);
+  const [isChatOpen , setIsChatOpen] = useState(false)
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const {user} = useAuth();
+  const [actionMsg, setActionMsg] = useState(null);
+const [showActions, setShowActions] = useState(false);
+const [replyingTo, setReplyingTo] = useState(null);
 
+  console.log(currentUserId , "currentuserid")
 
 
   const {
@@ -341,7 +359,9 @@ export default function ChatBox({
     handleDelete,
     emitTyping,
     typingUsers,
-    isTyping
+    isTyping,
+    currentConversationId,
+    setCurrentConversationId
   } = useSocket();
 
   console.log(conversationId , "conversationId")
@@ -355,6 +375,7 @@ useEffect(() => {
   setOtherUser(other);
 })();
     setConversation(selectedConversation); 
+    setCurrentConversationId( selectedConversation._id)
   }
 }, [selectedConversation, currentUserId]);
 
@@ -371,6 +392,7 @@ useEffect(() => {
         if (data.success) {
           setConversation(data.conversation);
           setOtherUser(data.receiver);
+          setCurrentConversationId(conversation?._id)
           console.log("✅ conversation set from API:", data.conversation);
           console.log("✅ otherUser set from API:", data.receiver);
         } else {
@@ -382,6 +404,34 @@ useEffect(() => {
     })();
   }
 }, [selectedConversation, conversationId, currentUserId]);
+
+// yahan hum state change kar rhae hai 
+useEffect(() => {
+  if (currentConversationId === null && conversationId !== null) {
+    setCurrentConversationId(conversationId);
+  }
+}, [currentConversationId, conversationId]);
+
+
+
+//  function to mark the messages as seen
+
+useEffect(() => {
+if (socket && currentUserId && conversationId && conversation?.participants) {
+    const sender = conversation.participants.find(p => p._id !== currentUserId);
+    const senderId = sender?._id;
+    if (senderId) {
+      socket.emit('mark-seen', { conversationId, receiverId: currentUserId, senderId });
+      // update DB as well
+      api.patch('/api/messages/mark-seen', { conversationId, receiverId: currentUserId })
+      .then(() => fetchMessages(conversationId))
+      .catch(err => console.error('❌ mark-seen patch failed:', err));
+    }
+  }
+
+}, [conversationId, currentUserId, socket ,selectedConversation , conversation]);
+
+
 
 useEffect(() => {
   console.log("💬 conversationId changed, fetching messages:", conversationId);
@@ -444,6 +494,10 @@ useEffect(() => {
         fileUrl: null,
         uploading: !!file,
         status:'sent',
+         replyTo: replyingTo ? { _id: replyingTo._id, content: replyingTo.content, type: replyingTo.type } : null,
+
+        
+
         createdAt: new Date().toISOString(),
       },
     ]);
@@ -457,6 +511,7 @@ useEffect(() => {
         else if (data.resource_type === "video") type = "video";
         else type = "file";
       }
+      console.log(replyingTo,"replying to")
       const saved = await sendMessage(
         conversationId,
         content || file.name,
@@ -465,7 +520,8 @@ useEffect(() => {
         type,
         null,
         fileUrl,
-        status
+        replyingTo?._id,  // pass replyTo here
+        null // forwardedFrom
       );
      if(saved){
        setMessages((prev) =>
@@ -479,6 +535,7 @@ console.log("conversation._id:", conversation?._id, typeof conversation?._id);
     } catch {}
     setNewMsg("");
     setFile(null);
+    setReplyingTo(null);
   };
 
   // Edit handler
@@ -565,9 +622,17 @@ const filtered = messages.filter(
                 msg.sender === currentUserId || msg.senderId === currentUserId;
               return (
                 <div
-                  key={msg._id}
-                  className={`group relative flex ${isSender ? "justify-end" : "justify-start"}`}
-                >
+  key={msg._id}
+  className={`group relative flex ${isSender ? "justify-end" : "justify-start"}`}
+  onContextMenu={(e) => {
+    e.preventDefault(); 
+    setActionMsg(msg);
+    setShowActions(true);
+  }}
+  onClick={() => {
+    // Optional: for mobile single tap if you prefer
+  }}
+>
                   <div
                     className={`px-3 py-2 rounded-xl text-sm max-w-[70%] ${isSender ? "bg-purple-500 text-white" : "bg-gray-100 text-gray-900"}`}
                   >
@@ -683,8 +748,18 @@ const filtered = messages.filter(
     {msg.status === 'sending' && <span className="text-[10px] ml-1">🕓 Sending</span>}
     {msg.status === 'sent' && <span className="text-[10px] ml-1">✔ Sent</span>}
     {msg.status === 'delivered' && <span className="text-[10px] ml-1">✔✔ Delivered</span>}
-    {msg.status === 'read' && <span className="text-[10px] ml-1 text-blue-500">✔✔ Read</span>}
+    {msg.status === 'seen' && <span className="text-[10px] ml-1 text-blue-500">✔✔ seen</span>}
   </>
+)}
+{msg.replyTo && (
+  <div className="p-1 border-l-2 border-purple-500 text-xs text-gray-500 mb-1">
+    Replied To: {msg.replyTo?.content || '...'}
+  </div>
+)}
+{msg.forwardedFrom && (
+  <div className="p-1 border-l-2 border-green-500 text-xs text-gray-500 mb-1">
+    Forwarded message: {msg.forwardedFrom?.content || '...'}
+  </div>
 )}
                     </div>
                   </div>
@@ -692,7 +767,41 @@ const filtered = messages.filter(
               );
             })}
             <div ref={messagesEndRef} />
+            
+<Sheet open={showActions} onOpenChange={setShowActions}>
+  <SheetContent>
+     <VisuallyHidden>
+      <SheetTitle>Actions</SheetTitle>
+    </VisuallyHidden>
+    <div className="flex flex-col gap-2">
+      {actionMsg?.sender === currentUserId && !actionMsg?.isDeleted && (
+        <>
+          <Button onClick={() => { handleDelete(actionMsg._id); setShowActions(false); }}>Delete</Button>
+          <Button onClick={() => { setEditingMessageId(actionMsg._id); setEditDraft(actionMsg.content); setShowActions(false); }}>Edit</Button>
+        </>
+      )}
+      {actionMsg?.type === 'text' && (
+        <Button onClick={() => { navigator.clipboard.writeText(actionMsg.content); setShowActions(false); }}>Copy</Button>
+      )}
+      <Button onClick={() => { handleForward(actionMsg); setShowActions(false); }}>Forward</Button>
+       <Button onClick={() => { setReplyingTo(actionMsg); setShowActions(false); }}>Reply</Button>
+      {actionMsg?.fileUrl && (
+        <a href={actionMsg.fileUrl} download className="btn">Download</a>
+      )}
+    </div>
+  </SheetContent>
+</Sheet>
+            
           </div>
+{replyingTo && (
+  <div className="flex items-center justify-between px-2 py-1 bg-gray-100 border-b">
+    <span className="text-xs text-purple-500 truncate max-w-[200px]">
+      Replying to: {replyingTo.content || '[media]'}
+    </span>
+    <button onClick={() => setReplyingTo(null)} className="text-gray-400 hover:text-gray-600">✖</button>
+  </div>
+)}
+
 
           {/* Input */}
           <div className="p-3 border-t flex items-center gap-2">
