@@ -1,27 +1,37 @@
 import { connectToDB } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import authOptions from "@/lib/authOptions";
 import { NextResponse } from "next/server";
 import User from "@/models/user";
 import { authenticateUser } from "@/middlewares/auth";
 
-export async function POST(req) {
-  await connectToDB();
-
- const authResult  = authenticateUser(req);
-
- if(authResult instanceof Response) return authResult;
-
- 
-
+export async function PATCH(req) {
   try {
+    await connectToDB();
+
+    // Authenticate user; assume it returns { user }
+    const { user } = await authenticateUser(req);
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        message: "Unauthorized user",
+        status: 401,
+      });
+    }
+
     const { newRole } = await req.json();
 
-    const {id ,role} = req.user()
-    console.log("id ", id);
+    if (!newRole || !["buyer", "seller"].includes(newRole)) {
+      return NextResponse.json({
+        success: false,
+        message: "Invalid role provided",
+        status: 400,
+      });
+    }
 
-    const user = await User.findOne({id});
-    if (!user) {
+    const userId = user._id;
+    console.log("Switching role for user:", userId);
+
+    const updatedUser = await User.findById(userId);
+    if (!updatedUser) {
       return NextResponse.json({
         success: false,
         message: "User not found",
@@ -29,21 +39,22 @@ export async function POST(req) {
       });
     }
 
-    user.role = newRole;
-    await user.save();
+    updatedUser.role = newRole;
+    await updatedUser.save();
 
     return NextResponse.json({
       success: true,
       status: 200,
       message: "Role updated successfully",
       user: {
-        name: user.name,
-        email: user.email,
-        role: user.role,
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
       },
     });
   } catch (error) {
-    console.error("POST /api/user/switch-role error:", error.message);
+    console.error("POST /api/user/switch-role error:", error);
     return NextResponse.json({
       success: false,
       status: 500,

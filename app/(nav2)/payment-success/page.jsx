@@ -5,6 +5,7 @@ import { CheckCircle, Package, Calendar, Star, ArrowRight, Download, MessageCirc
 import { toast } from 'react-hot-toast';
 import api from '@/lib/axios';
 import { useSearchParams, useRouter } from 'next/navigation'; // ✅ fix
+import { useSocket } from '../context/SocketContext';
 // removed useParams (was unused)
 
 export default function PaymentSuccess() {
@@ -14,43 +15,62 @@ export default function PaymentSuccess() {
   const [orderData, setOrderData] = useState(null);
   const [transactionData, setTransactionData] = useState(null);
   const [error, setError] = useState(null);
+  const {createNotification} = useSocket();
+
 
   const paymentIntent = searchParams.get('payment_intent');
   const clientSecret = searchParams.get('payment_intent_client_secret');
   const redirectStatus = searchParams.get('redirect_status');
+useEffect(() => {
+  const processPaymentSuccess = async () => {
+    if (!paymentIntent || redirectStatus !== 'succeeded' || !clientSecret) {
+      setError('Invalid payment confirmation');
+      setLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    const processPaymentSuccess = async () => {
-      if (!paymentIntent || redirectStatus !== 'succeeded') {
-        setError('Invalid payment confirmation');
-        setLoading(false);
-        return;
+    try {
+      const response = await api.patch('/api/orders/confirm-payment', {
+        clientSecret
+      });
+
+      if (response.data.success) {
+        setOrderData(response.data.order);
+        setTransactionData(response.data.transaction);
+
+        const notificationData = {
+          userId: response.data.order.seller,
+          type: "order",
+          title: "New Order Received",
+          message: `You have received a new order (ID: ${response.data.order._id}). Please check requirements.`,
+          actionUrl: `/seller/orders/${response.data.order._id}`
+        };
+
+        // create notification
+        await createNotification(notificationData);
+
+        toast.success('Payment confirmed successfully!');
+
+        // ✅ redirect to requirements page after short delay
+        setTimeout(() => {
+          router.push(`/orders/${response.data.order._id}/submit-requirements`);
+        }, 3000);
+
+      } else {
+        throw new Error(response.data.message || 'Failed to confirm payment');
       }
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      setError(error.response?.data?.message || 'Failed to confirm payment');
+      toast.error('There was an issue confirming your payment');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      try {
-        const response = await api.patch('/api/orders/confirm-payment', {
-         
-          clientSecret :clientSecret
-        });
+  processPaymentSuccess();
+}, [paymentIntent, redirectStatus, clientSecret, router]); 
 
-        if (response.data.success) {
-          setOrderData(response.data.order);
-          setTransactionData(response.data.transaction);
-          toast.success('Payment confirmed successfully!');
-        } else {
-          throw new Error(response.data.message || 'Failed to confirm payment');
-        }
-      } catch (error) {
-        console.error('Error confirming payment:', error);
-        setError(error.response?.data?.message || 'Failed to confirm payment');
-        toast.error('There was an issue confirming your payment');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    processPaymentSuccess();
-  }, [paymentIntent, redirectStatus ,clientSecret]);
 
   const formatDate = (dateString) =>
     new Date(dateString).toLocaleDateString('en-US', {

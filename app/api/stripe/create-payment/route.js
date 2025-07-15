@@ -95,7 +95,6 @@
 //     });
 //   }
 // }
-
 import { connectToDB } from "@/lib/db";
 import { authenticateUser } from "@/middlewares/auth";
 import Orders from "@/models/orders";
@@ -136,30 +135,39 @@ export async function POST(req) {
       });
     }
 
-    const fee = Math.round(order.price * 0.2 * 100); // your platform fee
-    const amount = order.price * 100;
-    console.log("[Payment] Calculated fee:", fee, " total amount:", amount);
+    let paymentIntent;
 
-    // Instead of sending directly to seller, create paymentIntent for platform
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount,
-      currency: 'usd',
-      // optional: you can store fee in metadata for later reference
-      metadata: { orderId: order._id.toString(), fee: fee }
-    });
+    // ✅ Check if paymentIntentId already exists
+    if (order.paymentIntentId) {
+      console.log("[Payment] PaymentIntent already exists:", order.paymentIntentId);
+      // Retrieve existing PaymentIntent from Stripe to get client_secret
+      paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId);
+    } else {
+      // Create new PaymentIntent
+      const fee = Math.round(order.price * 0.2 * 100); // your platform fee
+      const amount = order.price * 100;
+      console.log("[Payment] Calculated fee:", fee, " total amount:", amount);
 
-    console.log("[Stripe] Created paymentIntent:", paymentIntent.id);
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        metadata: { orderId: order._id.toString(), fee: fee }
+      });
 
-    order.paymentIntentId = paymentIntent.id;
-    order.applicationFeeAmount = fee;
-    order.transferAmount = amount - fee;
-    await order.save();
+      console.log("[Stripe] Created paymentIntent:", paymentIntent.id);
 
-    console.log("[Order] Updated order with paymentIntentId and saved");
+      // Save IDs and amounts to DB
+      order.paymentIntentId = paymentIntent.id;
+      order.applicationFeeAmount = fee;
+      order.transferAmount = amount - fee;
+      await order.save();
+
+      console.log("[Order] Updated order with paymentIntentId and saved");
+    }
 
     return NextResponse.json({
       success: true,
-      message: "Transaction created, waiting for confirmation",
+      message: "Transaction ready",
       status: 201,
       clientSecret: paymentIntent.client_secret
     });
@@ -174,4 +182,3 @@ export async function POST(req) {
     });
   }
 }
-

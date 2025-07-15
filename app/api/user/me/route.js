@@ -30,11 +30,7 @@ export async function GET(req) {
       success: true,
       status: 200,
       message: "User found successfully",
-      user: {
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role,
-      },
+       user:foundUser
     });
   } catch (error) {
     console.error("GET /api/user/me error:", error.message);

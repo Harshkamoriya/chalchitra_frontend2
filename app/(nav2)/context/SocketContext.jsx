@@ -144,32 +144,6 @@
 // //     }
 // //   }
 
-// //   // Mark notification as read
-// //   const markNotificationAsRead = async (notificationId) => {
-// //     try {
-// //       await fetch(`api/notifications/${notificationId}`, {
-// //         method: 'PATCH',
-// //         headers: { 'Content-Type': 'application/json' },
-// //         body: JSON.stringify({ isRead: true })
-// //       });
-// //       setNotifications(prev =>
-// //         prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
-// //       );
-// //       setUnreadCount(prev => ({ ...prev, notifications: Math.max(0, prev.notifications - 1) }));
-// //     } catch (error) {
-// //       console.error('❌ Error marking notification as read:', error);
-// //     }
-// //   };
-
-// //   // Delete notification
-// //   const deleteNotification = async (notificationId) => {
-// //     try {
-// //       await fetch(`/api/notifications/${notificationId}`, { method: 'DELETE' });
-// //       setNotifications(prev => prev.filter(n => n._id !== notificationId));
-// //     } catch (error) {
-// //       console.error('❌ Error deleting notification:', error);
-// //     }
-// //   };
 
 // //   // Send message & emit to socket
 // //  const sendMessage = async (conversationId, content, senderId, receiverId, type = 'text', file = null, fileUrl) => {
@@ -540,9 +514,9 @@ useEffect(() => {
   };
 
   // ✅ Emit read when user reads
-  const markAsRead = (messageId, senderId) => {
-    if (socket) socket.emit('read', { messageId, senderId });
-  };
+  // const markAsRead = (messageId, senderId) => {
+  //   if (socket) socket.emit('read', { messageId, senderId });
+  // };
 
   // ✅ Emit typing when user types
   const emitTyping = (otherUserId) => {
@@ -556,8 +530,8 @@ useEffect(() => {
   };
 
   // Notifications
-  const markNotificationAsRead = async (notificationId) => { /* unchanged */ };
-  const deleteNotification = async (notificationId) => { /* unchanged */ };
+  // const markNotificationAsRead = async (notificationId) => { /* unchanged */ };
+  // const deleteNotification = async (notificationId) => { /* unchanged */ };
 
   // Delete / edit handlers
 const handleDelete = async (messageId) => {
@@ -596,6 +570,128 @@ const handleDelete = async (messageId) => {
 //   setReplyingTo(originalMsg);
 // };
 
+// notification system on 
+
+useEffect(() => {
+  if (!socket) return;
+
+  const handleNewNotification = (notification) => {
+    console.log("🔔 New notification received:", notification);
+    // Add to local state
+    setNotifications(prev => [notification, ...prev]);
+    setUnreadCount(prev => ({ ...prev, notifications: prev.notifications + 1 }));
+
+    // optional: show toast to seller
+    toast.success(notification.title || 'You have a new notification');
+  };
+
+  socket.on('newNotification', handleNewNotification);
+
+  // Cleanup
+  return () => {
+    socket.off('newNotification', handleNewNotification);
+  };
+}, [socket]);
+
+const fetchNotifications = async () => {
+  try {
+    const res = await api.get('/api/notifications'); // GET request
+    const data = await res.json();
+    if (res.ok) {
+      setNotifications(data.notifications);
+      setUnreadCount(prev => ({ ...prev, notifications: data.unreadCount }));
+    } else {
+      console.error('❌ fetchNotifications failed:', data.error);
+    }
+  } catch (error) {
+    console.error('❌ fetchNotifications error:', error);
+  }
+};
+
+const sendNotification = async(notification)=>{
+  if(!socket)return ;
+  socket.emit( 'newNotification', {notification});
+}
+const createNotification = async ({ notificationData }) => {
+  try {
+    const res = await api.post('/api/notifications', {
+      notificationData })
+    
+    const data = await res.json();
+    if (res.ok && data.success) {
+      // optional: update local state immediately
+      setNotifications(prev => [data.notification, ...prev]);
+      setUnreadCount(prev => ({ ...prev, notifications: prev.notifications + 1 }));
+       if (socket) {
+        socket.emit('newNotification', res.data.notification);
+      }
+    } else {
+      console.error('❌ createNotification failed:', data.error);
+    }
+  } catch (error) {
+    console.error('❌ createNotification error:', error);
+  }
+};
+
+
+
+
+
+
+const markNotificationAsRead = async (notificationId) => {
+  try {
+    const res = await api.patch(`/api/notifications/${notificationId}`, {
+      isRead: true })
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setNotifications(prev =>
+        prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
+      );
+      setUnreadCount(prev => ({ ...prev, notifications: Math.max(prev.notifications - 1, 0) }));
+    } else {
+      console.error('❌ markNotificationAsRead failed:', data.error);
+    }
+  } catch (error) {
+    console.error('❌ markNotificationAsRead error:', error);
+  }
+};
+
+  // Delete notification
+ const deleteNotification = async (notificationId) => {
+  try {
+    const res = await api.delete(`/api/notifications/${notificationId}`);
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setNotifications(prev =>
+        prev.filter(n => n._id !== notificationId)
+      );
+      // optional: adjust unread count if needed
+    } else {
+      console.error('❌ deleteNotification failed:', data.error);
+    }
+  } catch (error) {
+    console.error('❌ deleteNotification error:', error);
+  }
+};
+
+
+const markAllNotificationsAsRead = async () => {
+  try {
+    const res = await api.patch('/api/notifications/mark-all-read');
+    const data = await res.json();
+    if (res.ok && data.success) {
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(prev => ({ ...prev, notifications: 0 }));
+    } else {
+      console.error('❌ markAllNotificationsAsRead failed:', data.message);
+    }
+  } catch (error) {
+    console.error('❌ markAllNotificationsAsRead error:', error);
+  }
+};
+
+
+
 
   const value = {
     socket,
@@ -609,16 +705,21 @@ const handleDelete = async (messageId) => {
     unreadCount,
     sendMessage,
     fetchMessages,
-    markAsRead,         // ✅ new
+    // ✅ new
     emitTyping,         // ✅ new
     typingUsers,
-    markNotificationAsRead,
-    deleteNotification,
+   
     handleDelete,
     handleEdit,
     isTyping,
     currentConversationId,
-    setCurrentConversationId
+    setCurrentConversationId,
+    fetchNotifications,
+  createNotification,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  deleteNotification,
+  sendNotification
   };
 
   return (

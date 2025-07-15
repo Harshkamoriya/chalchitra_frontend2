@@ -1,4 +1,3 @@
-// Notification model
 import mongoose from 'mongoose';
 
 const NotificationSchema = new mongoose.Schema({
@@ -7,11 +6,13 @@ const NotificationSchema = new mongoose.Schema({
     required: true,
     ref: 'User'
   },
+
   type: {
     type: String,
     required: true,
-    enum: ['order', 'message', 'system', 'payment', 'rating']
+    enum: ['order', 'message', 'system', 'payment', 'rating'] // or even 'custom'
   },
+
   title: {
     type: String,
     required: true
@@ -20,18 +21,20 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  actionUrl: {
+    type: String,
+    default: null // where user should go on click
+  },
   isRead: {
     type: Boolean,
     default: false
   },
-  actionUrl: {
+  role: {
     type: String,
-    default: null
+    enum: ['buyer', 'seller'],
+    required: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+
+}, { timestamps: true }); // adds createdAt & updatedAt
 
 export default mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);

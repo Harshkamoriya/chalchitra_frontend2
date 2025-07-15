@@ -301,6 +301,9 @@
 
 //   );
 // }
+
+
+
 "use client"
 import React, { useState, useEffect } from 'react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -308,6 +311,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { toast } from 'react-hot-toast';
 import { Clock, Shield, CreditCard, Check, Package, Star } from 'lucide-react';
 import api from '@/lib/axios';
+import { useRef } from 'react';
 import { useParams } from 'next/navigation';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -527,13 +531,15 @@ export default function PaymentPage() {
   const [clientSecret, setClientSecret] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
+  const paymentCreatedRef = useRef(false); // ✅ useRef instead of state
+
   useEffect(() => {
     const fetchOrderAndCreatePaymentIntent = async () => {
       try {
         // Fetch order details
         const orderRes = await api.get(`/api/orders/pending_payment/${orderId}`);
         if (orderRes.data.success) {
-          console.log('Order data:', orderRes.data.order);
           setOrderData(orderRes.data.order);
         } else {
           toast.error('Failed to load order details');
@@ -542,8 +548,8 @@ export default function PaymentPage() {
         // Create payment intent
         const paymentRes = await api.post('/api/stripe/create-payment', { orderId });
         if (paymentRes.data.success) {
-          console.log('Got clientSecret:', paymentRes.data.clientSecret);
           setClientSecret(paymentRes.data.clientSecret);
+          paymentCreatedRef.current = true; // ✅ mark as created
         } else {
           toast.error('Failed to initialize payment');
         }
@@ -555,8 +561,12 @@ export default function PaymentPage() {
       }
     };
 
-    if (orderId) fetchOrderAndCreatePaymentIntent();
+    if (orderId && !paymentCreatedRef.current) {
+      fetchOrderAndCreatePaymentIntent();
+    }
   }, [orderId]);
+
+
 
   const appearance = { 
     theme: 'stripe',

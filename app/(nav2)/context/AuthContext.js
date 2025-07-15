@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import api from "@/lib/axios";
 
 const AuthContext = createContext();
 
@@ -11,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // decoded JWT
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [activeRole , setActiveRole] = useState(null);
 
   useEffect(() => {
     const initAuth = () => {
@@ -74,15 +76,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleSwitch = (buyerPath = "/", sellerPath = "/") => {
-    const currentRole = Cookies.get("currentRole");
-    const newRole = currentRole === "buyer" ? "seller" : "buyer";
+  useEffect(()=>{
+    const storedRole = localStorage.getItem("activeRole");
+    setActiveRole( storedRole);
+  },[])
 
-    Cookies.set("currentRole", newRole, { expires: 7, path: "/" });
-    console.log("Switched role to:", newRole);
+const handleSwitch = async () => {
+  try {
+    const activeRole = localStorage.getItem("activeRole")
+    const newRole = activeRole === 'buyer' ? 'seller' : 'buyer';
+    setActiveRole(newRole)
+    // optimistically update context
+    console.log("role switchrd to ", newRole)
 
-    router.push(newRole === "seller" ? sellerPath : buyerPath);
-  };
+    // optionally localStorage
+    localStorage.setItem('activeRole', newRole);
+
+    // call backend to update user's active role
+    await api.patch('/api/user/switch-role', { newRole });
+
+    // optional: show toast
+    // toast.success(`Switched to ${newRole} mode`);
+  } catch (error) {
+    console.error('Failed to switch role', error);
+    // rollback if API fails
+    // toast.error('Failed to switch role');
+  }
+};
+
+
+ const getRole = () =>{
+    return localStorage.getItem("activeRole")
+ }
+
 
   const logout = async () => {
     sessionStorage.removeItem("accessToken");
@@ -102,11 +128,12 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ accessToken, user, loading, login, logout, handleSwitch }}
+      value={{ accessToken,activeRole , setActiveRole, user,getRole, loading, login, logout, handleSwitch }}
     >
       {!loading && children}
     </AuthContext.Provider>
   );
-};
+}
+
 
 export const useAuth = () => useContext(AuthContext);

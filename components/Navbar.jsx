@@ -44,6 +44,7 @@ import { useAuth } from "@/app/(nav2)/context/AuthContext";
 import MessageDropdown from "./messages/MessageDropdown";
 import { SocketProvider, useSocket } from "@/app/(nav2)/context/SocketContext";
 import NotificationDropdown from "./notifications/NotificationDropdown";
+import { useUserContext } from "@/app/(nav2)/context/UserContext";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -58,15 +59,20 @@ const Navbar = () => {
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const router = useRouter();
+  const {handleSwitch ,activeRole } = useAuth();
+  // const activeRole = localStorage.getItem("activeRole")
+  console.log(activeRole,"activeRole")
   useEffect(() => {
     if (user && !prevUser) {
       setShowAuthModal(false);
     }
     setPrevUser(user);
   }, [user, prevUser]);
+  const {userData} = useUserContext();
 
   console.log("user", user);
   console.log(prevUser, "prevUser");
+  console.log(userData,"userdata form usercontext")
 
   const mockNotifications = 3;
   const mockMessages = 2;
@@ -101,7 +107,8 @@ const Navbar = () => {
   };
 
   const handleMobileSwitchToBuying = () => {
-    console.log("Switched to buyer mode");
+    console.log("inside handleswitch buying")
+    handleSwitch();
     setIsMobileMenuOpen(false);
     setShowMobileProfile(false);
   };
@@ -118,7 +125,6 @@ const Navbar = () => {
 
   return (
     <>
-      <SocketProvider user={user}>
         <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -232,14 +238,11 @@ const Navbar = () => {
                       userData={{
                         name: user?.name || "User",
                         email: user?.email || "",
-                        role: user?.role || "buyer",
                         avatar: user?.avatar || "/placeholder.svg",
                         level: user?.level || "Level 1",
                         rating: user?.rating || 5,
                       }}
-                      onSwitchToBuying={() => {
-                        console.log("Switched to buyer mode");
-                      }}
+                      activeRole={activeRole}
                       onLogout={logout}
                     />
                   </>
@@ -455,10 +458,10 @@ const Navbar = () => {
                           {/* Switch to Buying Button */}
                           <Button
                             onClick={handleMobileSwitchToBuying}
-                            className="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-3 rounded-lg shadow-sm transition-all duration-200"
+                            className="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-lg shadow-sm transition-all duration-200"
                           >
                             <UserCheck className="h-4 w-4 mr-2" />
-                            Switch to Buying
+                            Switch to {activeRole === "buyer" ? "seller" : "buyer"}
                           </Button>
 
                           {/* Menu Items */}
@@ -569,7 +572,6 @@ const Navbar = () => {
           onClose={() => setShowAuthModal(false)}
           defaultMode={authMode}
         />
-      </SocketProvider>
     </>
   );
 };

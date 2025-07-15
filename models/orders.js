@@ -45,6 +45,7 @@ ispaid:{type:Boolean, default:false},
     },
   ],
 
+
   note: { type: String }, // short buyer note
 
   status: {
@@ -52,7 +53,7 @@ ispaid:{type:Boolean, default:false},
     enum: [
       "pending",
       "awaiting_requirements",
-      "in_progress",
+      "active",
       "delivered",
       "completed",
       "cancelled",
@@ -70,6 +71,11 @@ ispaid:{type:Boolean, default:false},
     files: [{ type: String }],
     deliveredAt: { type: Date },
   },
+  requirementsFile: {type:String},
+  requirementsMessage: String,
+
+
+ 
 
 
 

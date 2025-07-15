@@ -28,6 +28,7 @@ export async function PATCH(req) {
     if (paymentIntent.status === 'succeeded') {
       // Find order
       const order = await Orders.findOne({ paymentIntentId: paymentIntent.id });
+      console.log(order , "order if found")
       if (!order) {
         return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
       }

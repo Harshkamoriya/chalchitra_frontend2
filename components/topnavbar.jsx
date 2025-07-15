@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -32,6 +33,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/app/(nav2)/context/AuthContext"
 
 const navigationItems = [
   {
@@ -91,6 +93,10 @@ const userData = {
 export default function TopNavbar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const {getRole} = useAuth();
+  const {handleSwitch , activeRole} = useAuth();
+  
+  console.log(activeRole , "active role in topnavbar")
 
   const NavItem = ({ item, isMobile = false, showBadge = true }) => {
     const isActive = pathname === item.href
@@ -173,12 +179,12 @@ export default function TopNavbar() {
 
           {/* Switch to Buying Button */}
           <div className="px-4 py-2">
-            <Link href="/categories">
-              <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg">
+            
+              <Button onClick={handleSwitch} className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 rounded-lg">
                 <UserCheck className="h-4 w-4 mr-2" />
-                Switch to Buying
+                Switch to {activeRole === "buyer" ? "seller" :"buyer"}
               </Button>
-            </Link>
+           
           </div>
 
           {/* Menu Items */}
@@ -288,9 +294,9 @@ export default function TopNavbar() {
 
           {/* Switch to Buying Button */}
           <div className="p-4 border-b border-gray-200">
-            <Button className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg">
+            <Button onClick={handleSwitch} className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg">
               <UserCheck className="h-4 w-4 mr-2" />
-              Switch to Buying
+              Switch to {activeRole === "buyer" ? "seller" : "buyer"}
             </Button>
           </div>
 

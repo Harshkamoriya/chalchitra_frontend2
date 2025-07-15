@@ -19,6 +19,11 @@ const ConversationSchema = new mongoose.Schema({
     of: Number,
     default: new Map()
   },
+    role: {
+    type: String,
+    enum: ['buyer', 'seller'],
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -594,12 +594,15 @@ import api from "@/lib/axios"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { toast } from "react-hot-toast"
+import { useAuth } from "@/app/(nav2)/context/AuthContext"
+import Modal from "react-modal"
+import { useSocket } from "@/app/(nav2)/context/SocketContext"
 
 const tabs = [
   "PRIORITY", "ACTIVE", "LATE", "DELIVERED", "COMPLETED", "CANCELLED", "STARRED"
 ]
 
-// status color mapping
 const statusConfig = {
   active: "bg-blue-100 text-blue-800",
   urgent: "bg-red-100 text-red-800",
@@ -616,18 +619,25 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const limit = 10
   const [loading, setLoading] = useState(false)
+  const limit = 10
 
-  // Fetch from backend
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedOrderId, setSelectedOrderId] = useState(null)
+  const [deliveryFile, setDeliveryFile] = useState(null)
+  const [viewRequirementsUrl, setViewRequirementsUrl] = useState(null)
+
+  const { activeRole } = useAuth();
+  const { sendNotification } = useSocket();
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
         setLoading(true)
         const res = await api.get('/api/user/orders', {
           params: {
-            role: "seller",
-            status: activeTab.toLowerCase(), // convert tab to status
+            role: activeRole,
+            status: activeTab.toLowerCase(),
             search: searchQuery,
             page,
             limit
@@ -647,9 +657,12 @@ export default function OrdersPage() {
       }
     }
     fetchOrders()
-  }, [activeTab, searchQuery, page])
+  }, [activeTab, searchQuery, page, activeRole])
+  
+  useEffect(() => {
+  Modal.setAppElement('body')
+}, [])
 
-  // Filter by tab in frontend if needed
   const filteredOrders = orders.filter(order => {
     switch (activeTab) {
       case "PRIORITY": return order.status === "urgent"
@@ -663,19 +676,69 @@ export default function OrdersPage() {
     }
   })
 
+  const handleUploadAndDeliver = async () => {
+    if (!deliveryFile || !selectedOrderId) return
+
+    try {
+      const formData = new FormData()
+      formData.append("file", deliveryFile)
+      formData.append("upload_preset", "your_unsigned_preset") // replace with real
+
+      const uploadRes = await fetch("https://api.cloudinary.com/v1_1/your_cloud_name/video/upload", {
+        method: "POST",
+        body: formData
+      })
+      const uploadData = await uploadRes.json()
+
+      if (uploadData.secure_url) {
+        const res = await api.patch(`/api/orders/${selectedOrderId}/deliver`, {
+          deliveryFileUrl: uploadData.secure_url
+        })
+        toast.success("Delivered successfully!")
+        sendNotification(res.data.notification)
+        setIsModalOpen(false)
+        setDeliveryFile(null)
+      } else {
+        throw new Error("Upload failed")
+      }
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to deliver")
+    }
+  }
+
+  const handleAccept = async (orderId) => {
+    try {
+      const res = await api.patch(`/api/orders/${orderId}/accept`)
+      sendNotification(res.data.notification)
+      toast.success("Order accepted!")
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to accept")
+    }
+  }
+
+  const handleRequestRevision = async (orderId) => {
+    try {
+      const res = await api.patch(`/api/orders/${orderId}/request-revision`)
+      toast.success("Revision requested!")
+      sendNotification(res.data.notification)
+    } catch (err) {
+      console.error(err)
+      toast.error("Failed to request revision")
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold mb-6">Manage Orders</h1>
+      <h1 className="text-3xl font-semibold mb-6">Manage Orders ({activeRole})</h1>
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
         {tabs.map(tab => (
           <button
             key={tab}
-            onClick={() => {
-              setActiveTab(tab)
-              setPage(1)
-            }}
+            onClick={() => { setActiveTab(tab); setPage(1) }}
             className={`py-2 px-4 text-sm font-medium ${
               activeTab === tab
                 ? "border-b-2 border-gray-800 text-gray-800"
@@ -692,30 +755,13 @@ export default function OrdersPage() {
         <Input
           placeholder="Search by buyer, gig, note..."
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value)
-            setPage(1)
-          }}
+          onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
           className="max-w-xs"
         />
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            Prev
-          </Button>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</Button>
           <span className="text-gray-500 text-sm mt-2">Page {page} of {totalPages}</span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Next
-          </Button>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       </div>
 
@@ -724,35 +770,72 @@ export default function OrdersPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Buyer</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Gig</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Due On</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Total</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Note</th>
-              <th className="px-4 py-3 text-left font-medium text-gray-700">Status</th>
+              <th className="px-4 py-3">Buyer</th>
+              <th className="px-4 py-3">Gig</th>
+              <th className="px-4 py-3">Due On</th>
+              <th className="px-4 py-3">Total</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Requirements</th>
+              <th className="px-4 py-3">Delivery</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="6" className="text-center py-6">Loading...</td></tr>
+              <tr><td colSpan="8" className="text-center py-6">Loading...</td></tr>
             ) : filteredOrders.length > 0 ? (
               filteredOrders.map(order => (
-                <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
+                <tr key={order._id} className="border-t border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3">{order.buyer?.name || "N/A"}</td>
                   <td className="px-4 py-3">{order.service || "N/A"}</td>
                   <td className="px-4 py-3">{new Date(order.dueDate).toLocaleDateString()}</td>
                   <td className="px-4 py-3">${order.amount?.toFixed(2)}</td>
-                  <td className="px-4 py-3">{order.note || "-"}</td>
                   <td className="px-4 py-3">
                     <Badge className={`${statusConfig[order.status] || "bg-gray-100 text-gray-800"} border-0`}>
                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                     </Badge>
                   </td>
+                  {/* Requirements column */}
+                  <td className="px-4 py-3">
+                    {order.requirementsFile ? (
+                      <>
+                        <Button size="xs" onClick={() => setViewRequirementsUrl(order.requirementsFile)}>View</Button>
+                        <a href={order.requirementsFile} download target="_blank" rel="noreferrer">
+                          <Button size="xs" variant="secondary" className="ml-2">Download</Button>
+                        </a>
+                      </>
+                    ) : "N/A"}
+                  </td>
+                  {/* Delivery column */}
+                  <td className="px-4 py-3">
+                    {order.deliveryFileUrl ? (
+                      <>
+                        <video src={order.deliveryFileUrl} controls className="w-32 mb-1" />
+                        <a href={order.deliveryFileUrl} download target="_blank" rel="noreferrer">
+                          <Button size="xs">Download</Button>
+                        </a>
+                      </>
+                    ) : activeRole === "seller" && order.status === "active" && (
+                      <span>Not delivered</span>
+                    )}
+                  </td>
+                  {/* Actions */}
+                  <td className="px-4 py-3 space-x-2">
+                    {activeRole === "seller" && order.status === "active" && (
+                      <Button size="sm" onClick={() => { setSelectedOrderId(order._id); setIsModalOpen(true) }}>Deliver</Button>
+                    )}
+                    {activeRole === "buyer" && order.status === "delivered" && (
+                      <>
+                        <Button size="sm" variant="success" onClick={() => handleAccept(order._id)}>Accept</Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleRequestRevision(order._id)}>Request Revision</Button>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center py-6 text-gray-500">
+                <td colSpan="8" className="text-center py-6 text-gray-500">
                   No {activeTab.toLowerCase()} orders to show.
                 </td>
               </tr>
@@ -760,6 +843,26 @@ export default function OrdersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Deliver Modal */}
+      <Modal isOpen={isModalOpen} onRequestClose={() => setIsModalOpen(false)} contentLabel="Deliver Work" className="max-w-md mx-auto bg-white p-6 rounded shadow">
+        <h2 className="text-xl font-semibold mb-4">Deliver Work</h2>
+        <input type="file" accept="video/*" onChange={e => setDeliveryFile(e.target.files[0])} className="mb-4" />
+        <Button onClick={handleUploadAndDeliver} disabled={!deliveryFile}>Upload & Deliver</Button>
+      </Modal>
+
+      {/* View Requirements Modal */}
+      <Modal isOpen={!!viewRequirementsUrl} onRequestClose={() => setViewRequirementsUrl(null)} contentLabel="View Requirements" className="max-w-2xl mx-auto mt-24 bg-white p-6 rounded-lg shadow-lg">
+        <h2 className="text-xl font-semibold mb-4">Requirement File</h2>
+        {viewRequirementsUrl && (
+          <video src={viewRequirementsUrl} controls className="w-full rounded mb-4" />
+        )}
+        <div className="flex justify-end">
+          <a href={viewRequirementsUrl} download target="_blank" rel="noreferrer">
+            <Button>Download</Button>
+          </a>
+        </div>
+      </Modal>
     </div>
   )
 }

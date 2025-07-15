@@ -12,6 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useAuth } from '@/app/(nav2)/context/AuthContext';
 import {
   User,
   UserCheck,
@@ -27,7 +28,7 @@ import {
 
 const UserProfileDropdown = ({
   userData,
-  onSwitchToBuying,
+  activeRole,
   onLogout,
 }) => {
   const initials = userData.name
@@ -40,6 +41,13 @@ const UserProfileDropdown = ({
     console.log("inside handleNavigation");
     // Navigation logic here
   };
+
+  const {handleSwitch ,user }  = useAuth();
+
+  console.log(activeRole,"activeROle")
+  console.log(userData ,"user from usercontext");
+  console.log(user , "user from useauth")
+
 
   return (
     <DropdownMenu>
@@ -91,17 +99,17 @@ const UserProfileDropdown = ({
         {/* Switch Button */}
         <div className="p-3 border-b border-gray-100">
           <Button 
-            onClick={onSwitchToBuying}
+            onClick={handleSwitch}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 text-sm"
           >
             <UserCheck className="h-4 w-4 mr-2" />
-            Switch to Buying
+            Switch to { activeRole === "buyer" ? "seller" : "buyer"}
           </Button>
         </div>
 
         {/* Menu Items */}
         <div className="py-1">
-          <Link href={userData.role === "buyer" ? "user/buyer/profile/view" : "user/seller/profile/edit"} passHref>
+          <Link href={activeRole === "buyer" ? "user/buyer/profile/view" : "user/seller/profile/edit"} passHref>
             <DropdownMenuItem className="px-4 py-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50">
               <User className="h-4 w-4 mr-3 text-gray-500" />
               <span className="text-gray-700">Profile</span>

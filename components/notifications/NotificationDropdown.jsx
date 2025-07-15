@@ -18,6 +18,7 @@ const NotificationDropdown = ({ isOpen, setIsOpen }) => {
   const dropdownRef = useRef(null);
   const { notifications, markNotificationAsRead, deleteNotification } = useSocket();
   const isMobile = useIsMobile();
+  const {unreadCount} = useSocket();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
