@@ -9,6 +9,7 @@ export async function GET(request) {
 
     const { user } = await authenticateUser(request);
     const userId = user._id;
+    console.log(userId ,"user id in the notification fetch route")
 
     const { searchParams } = new URL(request.url);
     const activeRole = searchParams.get('activeRole');
