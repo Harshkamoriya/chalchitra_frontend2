@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem("accessToken", token);
         setAccessToken(token);
         setUser(decoded);
+        localStorage.setItem("activeRole" , decoded.role)
         Cookies.set("currentRole", decoded.role, { expires: 7, path: "/" });
         console.log("Logged in:", decoded);
       } catch (err) {
