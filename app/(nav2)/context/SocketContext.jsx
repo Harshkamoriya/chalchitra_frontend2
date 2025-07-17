@@ -329,7 +329,7 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [currentConversationId , setCurrentConversationId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
-
+  const {activeRole} = useAuth()
   const userId = user?.id;
 
 const currentConversationIdRef = useRef(null);
@@ -371,7 +371,7 @@ const currentConversationIdRef = useRef(null);
       console.log(currentConversationId , " currentconversationId")
 
      if (message.conversationId === currentConversationIdRef.current) {
-   socket.emit('mark-seen', { conversationId: message.conversationId, receiverId: userId, senderId: message.sender });
+   socketInstance.emit('mark-seen', { conversationId: message.conversationId, receiverId: userId, senderId: message.sender });
    api.patch('/api/messages/mark-seen', { conversationId: message.conversationId, receiverId: userId })
      .then(() => fetchMessages(message.conversationId))
      .catch(err => console.error('❌ mark-seen patch failed:', err));
@@ -472,9 +472,9 @@ useEffect(() => {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch(`/api/messages?userId=${userId}`);
-      const data = await res.json();
-      setConversations(data.conversations || []);
+      const res = await api.get(`/api/messages?userId=${userId}&activeRole=${activeRole}`);
+      console.log(res ,'res')
+      setConversations(res.data.conversations || []);
     } catch (err) {
       console.error('❌ Error fetching conversations:', err);
     }
@@ -595,13 +595,13 @@ useEffect(() => {
 
 const fetchNotifications = async () => {
   try {
-    const res = await api.get('/api/notifications'); // GET request
-    const data = await res.json();
-    if (res.ok) {
-      setNotifications(data.notifications);
-      setUnreadCount(prev => ({ ...prev, notifications: data.unreadCount }));
+    const res = await api.get(`/api/notifications?activeRole=${activeRole}`); // GET request
+    console.log(res ,"res")
+    if (res.status === 200) {
+      setNotifications(res.data.notifications);
+      setUnreadCount(prev => ({ ...prev, notifications: res.data.unreadCount }));
     } else {
-      console.error('❌ fetchNotifications failed:', data.error);
+      console.error('❌ fetchNotifications failed:', res.data.error);
     }
   } catch (error) {
     console.error('❌ fetchNotifications error:', error);
@@ -615,10 +615,10 @@ const sendNotification = async(notification)=>{
 const createNotification = async ({ notificationData }) => {
   try {
     const res = await api.post('/api/notifications', {
-      notificationData })
+      notificationData , activeRole })
     
-    const data = await res.json();
-    if (res.ok && data.success) {
+    const data = res;
+    if (data.status === 201) {
       // optional: update local state immediately
       setNotifications(prev => [data.notification, ...prev]);
       setUnreadCount(prev => ({ ...prev, notifications: prev.notifications + 1 }));
@@ -641,9 +641,10 @@ const createNotification = async ({ notificationData }) => {
 const markNotificationAsRead = async (notificationId) => {
   try {
     const res = await api.patch(`/api/notifications/${notificationId}`, {
-      isRead: true })
-    const data = await res.json();
-    if (res.ok && data.success) {
+      isRead: true , activeRole})
+    const data =  res ;
+    console.log(data , "data")
+    if (data.status === 200) {
       setNotifications(prev =>
         prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
       );
@@ -659,9 +660,9 @@ const markNotificationAsRead = async (notificationId) => {
   // Delete notification
  const deleteNotification = async (notificationId) => {
   try {
-    const res = await api.delete(`/api/notifications/${notificationId}`);
-    const data = await res.json();
-    if (res.ok && data.success) {
+    const res = await api.delete(`/api/notifications/${notificationId} ` ,{activeRole});
+    const data = res;
+    if (data.status === 200) {
       setNotifications(prev =>
         prev.filter(n => n._id !== notificationId)
       );
@@ -677,9 +678,9 @@ const markNotificationAsRead = async (notificationId) => {
 
 const markAllNotificationsAsRead = async () => {
   try {
-    const res = await api.patch('/api/notifications/mark-all-read');
-    const data = await res.json();
-    if (res.ok && data.success) {
+    const res = await api.patch(`/api/notifications/mark-all-read`,{activeRole});
+    const data = res;
+    if (data.status === 200) {
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(prev => ({ ...prev, notifications: 0 }));
     } else {

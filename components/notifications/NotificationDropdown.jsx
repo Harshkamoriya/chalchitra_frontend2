@@ -18,7 +18,7 @@ const NotificationDropdown = ({ isOpen, setIsOpen }) => {
   const dropdownRef = useRef(null);
   const { notifications, markNotificationAsRead, deleteNotification } = useSocket();
   const isMobile = useIsMobile();
-  const {unreadCount} = useSocket();
+  const {unreadCount , fetchNotifications , activeRole} = useSocket();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -26,9 +26,17 @@ const NotificationDropdown = ({ isOpen, setIsOpen }) => {
         setIsOpen(false);
       }
     };
+
+   
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setIsOpen]);
+
+  useEffect(()=>{
+    console.log("inside useeffect")
+    console.log(notifications,"notifications in dropdown")
+    fetchNotifications()
+  },[isOpen , activeRole])
 
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) markNotificationAsRead(notification._id);

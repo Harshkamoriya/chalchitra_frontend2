@@ -10,7 +10,7 @@ export async function GET(req, context) {
     if (!conversationId) {
       return NextResponse.json({ success: false, message: 'Conversation ID required' }, { status: 400 });
     }
-
+    
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 })
       .populate('replyTo', 'content type')          // 🪄 populate!

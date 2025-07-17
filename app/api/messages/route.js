@@ -8,40 +8,49 @@ import { authenticateUser } from '@/middlewares/auth';
 // this get function fetches
 //  all the conversation of
 //  an user by userid as
+// Messages API route
 
-export async function GET(req ) {
+
+export async function GET(req) {
   try {
     await connectToDB();
-    
-    
+    const {user} = await authenticateUser(req);
+    if(!user){return NextResponse.json({status:401})}
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
-    
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    const activeRole = searchParams.get('activeRole');
+
+    if (!userId || !activeRole) {
+      return NextResponse.json({ error: 'User ID and activeRole are required' }, { status: 400 });
     }
 
+    // Find conversations where user is a participant and conversation has the matching role
     const conversations = await Conversation.find({ 
-      participants: userId 
+      participants: userId,
+      role: activeRole
     })
     .populate('participants', 'name email avatar')
     .populate('lastMessage')
     .sort({ lastMessageTime: -1 });
 
+    // Compute total unread messages for this user
     const unreadCount = conversations.reduce((total, conv) => {
       return total + (conv.unreadCount.get(userId) || 0);
     }, 0);
 
-    console.log(conversations, "conversations")
+    console.log('Fetched conversations:', conversations);
     return NextResponse.json({ 
       conversations,
       unreadCount 
     });
+
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error('Error fetching conversations:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
 export async function POST(request) {
   try {
     console.log('[POST] Connecting to DB...');

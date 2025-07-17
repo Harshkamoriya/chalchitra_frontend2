@@ -5,12 +5,13 @@ import { toast } from 'react-hot-toast';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAuth } from '@/app/(nav2)/context/AuthContext';
-
+import api from '@/lib/axios';
 export default function StartChatButton({receiverId }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const {user} = useAuth();
   const currentUserId = user?.id;
+  const {activeRole} = useAuth();
 
   const startChat = async () => {
     console.log("inside start chat function")
@@ -20,16 +21,14 @@ export default function StartChatButton({receiverId }) {
 
     try {
       setLoading(true);
-      const res = await fetch('/api/conversations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentUserId, receiverId })
+      const res = await api.post(`/api/conversations`, {
+          activeRole , currentUserId, receiverId
       });
-      const data = await res.json();
+      
 
-      if (data.success) {
+      if (res.data.success) {
         toast.success('Chat started!');
-        router.push(`/inbox?conv_id=${data.conversation._id}`);
+        router.push(`/inbox?conv_id=${res.data.conversation._id}`);
       } else {
         toast.error('Could not start chat');
       }

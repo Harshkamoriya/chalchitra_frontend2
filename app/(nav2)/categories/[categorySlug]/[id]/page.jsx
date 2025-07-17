@@ -238,29 +238,28 @@ useEffect(() => {
 
 console.log(gig,"gig")
 
-
 const handleContinue = async () => {
   try {
-    // Build order data
+    if (!gig || !gig._id || !seller?._id || !user?.id) {
+      toast.error("Missing required data");
+      return;
+    }
+
     const orderData = {
-      gigId: gig?._id,
-      sellerId: seller?._id,
-      buyerId: user?.id,   // get from session/context
-      selectedPackage: gig?.packages[selectedPackage],
-      requirements: gig?.requirements,
+      gigId: gig._id,
+      sellerId: seller._id,  // Make sure this exists
+      buyerId: user.id,
+      selectedPackage: gig.packages[selectedPackage],
+      requirements: gig.requirements,
       addons: selectedAddOns,
       price: calculateTotal()
     };
 
-    const res =  await api.post(`/api/orders/pending_payment`, orderData)
-    if(res.data.success){
+    const res = await api.post(`/api/orders/pending_payment`, orderData);
+    if (res.data.success) {
       const orderId = res.data.orderId;
-      console.log("response  data , ", res.data)
-      if(orderId){
-        router.push(` /payment/${orderId}`)
-      }
-    }
-     else {
+      router.push(`/payment/${orderId}`);
+    } else {
       toast.error("Failed to create order");
     }
   } catch (error) {
@@ -268,7 +267,6 @@ const handleContinue = async () => {
     toast.error("Something went wrong");
   }
 };
-
 
   const getLevelBadge = (level) => {
     const badges = {

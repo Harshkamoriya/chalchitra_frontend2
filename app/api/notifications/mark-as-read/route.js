@@ -1,4 +1,3 @@
-
 import { connectToDB } from "@/lib/db";
 import Notification from "@/models/Notification";
 import { authenticateUser } from "@/middlewares/auth";
@@ -14,16 +13,26 @@ export async function PATCH(req) {
     }
 
     const userId = user._id;
-        await Notification.updateMany({ userId, isRead: false }, { isRead: true });
 
+    // Get activeRole from request body
+    const { activeRole } = await req.json();
 
-    if (!updated) {
-      return NextResponse.json({ success: false, message: "Notification not found" }, { status: 404 });
+    if (!activeRole || !['buyer', 'seller'].includes(activeRole)) {
+      return NextResponse.json({ success: false, message: "Invalid or missing activeRole" }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: "Marked as read", notif: updated }, { status: 200 });
+    // Mark all unread notifications for this user and role as read
+    const updated = await Notification.updateMany(
+      { userId, role: activeRole, isRead: false },
+      { isRead: true }
+    );
+
+    return NextResponse.json(
+      { success: true, message: "Marked as read", updatedCount: updated.modifiedCount },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("PATCH /api/notifications/mark-as-read error:", error);
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Internal server error", details: error.message }, { status: 500 });
   }
 }

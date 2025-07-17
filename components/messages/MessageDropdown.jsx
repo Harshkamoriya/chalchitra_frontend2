@@ -28,14 +28,15 @@ const MessageDropdown = ({ isOpen, setIsOpen }) => {
   const currentUserId = user?.id;
   const router = useRouter();
 
-  const { conversations, messages, sendMessage } = useSocket();
+  const { conversations, messages, sendMessage , fetchConversations , activeRole} = useSocket();
   const isMobile = useIsMobile();
   console.log(conversations,"conversations in messagedropdown")
 
 
    useEffect(() => {
     console.log('[useEffect] isOpen changed:', isOpen);
-  }, [isOpen]);
+    fetchConversations()
+  }, [isOpen , activeRole]);
   // Click outside to close
   // useEffect(() => {
   //   const handleClickOutside = (e) => {
