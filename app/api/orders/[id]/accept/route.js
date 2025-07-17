@@ -1,6 +1,6 @@
 import { connectToDB } from "@/lib/db";
-import Notification from "@/models/Notification";
 import Orders from "@/models/orders";
+import Notification from "@/models/Notification";
 
 export async function PATCH(req, { params }) {
   try {
