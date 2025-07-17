@@ -37,7 +37,10 @@ export const AuthProvider = ({ children }) => {
           if (decoded.exp > now) {
             setAccessToken(token);
             setUser(decoded);
+            localStorage.setItem("activeRole" ,decoded.role)
+            setActiveRole(decoded.role)
             console.log(decoded,"decoded")
+            console.log(decoded.role ,"decoded role in authcontext")
             Cookies.set("currentRole", decoded.role, { expires: 7, path: "/" });
           } else {
             sessionStorage.removeItem("accessToken");
@@ -66,9 +69,9 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem("accessToken", token);
         setAccessToken(token);
         setUser(decoded);
-        localStorage.setItem("activeRole" , decoded.role)
         Cookies.set("currentRole", decoded.role, { expires: 7, path: "/" });
         console.log("Logged in:", decoded);
+        console.log(decoded.role)
       } catch (err) {
         console.error("Failed to decode token during login:", err);
       }
