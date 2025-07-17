@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import Notification from '@/models/Notification';
 import { connectToDB } from '@/lib/db';
+import Notification from '@/models/Notification';
 import { authenticateUser } from '@/middlewares/auth';
 
 export async function GET(request) {
