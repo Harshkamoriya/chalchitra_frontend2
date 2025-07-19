@@ -8,35 +8,35 @@ import { authenticateUser } from "@/middlewares/auth";
 
 
 
-export async function POST(req) {
-  await connectToDB()
+// export async function POST(req) {
+//   await connectToDB()
 
-  const authResult = await authenticateUser(req)
-  if (authResult instanceof Response) return authResult
+//   const authResult = await authenticateUser(req)
+//   if (authResult instanceof Response) return authResult
 
-  const {user} = authResult
-  if (!user) {
-    return NextResponse.json({ success: false, message: "Unauthorized user", status: 401 })
-  }
+//   const {user} = authResult
+//   if (!user) {
+//     return NextResponse.json({ success: false, message: "Unauthorized user", status: 401 })
+//   }
 
-  try {
-    const body = await req.json()
-    console.log(body, " body of gig");
+//   try {
+//     const body = await req.json()
+//     console.log(body, " body of gig");
 
-    const newGig = new Gigs({
-      ...body,
-      seller: user._id,
-      status: body.status || "draft",
-    })
+//     const newGig = new Gigs({
+//       ...body,
+//       seller: user._id,
+//       status: body.status || "draft",
+//     })
 
-    const savedGig = await newGig.save()
+//     const savedGig = await newGig.save()
 
-    return NextResponse.json({ success: true, message: "Gig created", status: 201, gig: savedGig })
-  } catch (err) {
-    console.error("Gig creation error:", err)
-    return NextResponse.json({ success: false, message: "Failed to create gig", status: 500 })
-  }
-}
+//     return NextResponse.json({ success: true, message: "Gig created", status: 201, gig: savedGig })
+//   } catch (err) {
+//     console.error("Gig creation error:", err)
+//     return NextResponse.json({ success: false, message: "Failed to create gig", status: 500 })
+//   }
+// }
 
 
 export async function GET() {

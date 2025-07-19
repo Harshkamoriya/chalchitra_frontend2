@@ -3,74 +3,106 @@ import { connectToDB } from "@/lib/db";
 import { authenticateUser } from "@/middlewares/auth";
 import Orders from "@/models/orders";
 
-
 export async function GET(req) {
-  console.log("Received request:", req.url);
+  console.log("[Backend] GET /api/user/orders - Starting request");
 
   const authResult = await authenticateUser(req);
   if (authResult instanceof Response) {
-    console.log("Authentication failed: returning response");
+    console.log("[Backend] Authentication failed");
     return authResult;
   }
 
   const { user } = authResult;
-  if (!user) {
-    console.log("No user found after authentication");
-    return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  }
-  console.log("Authenticated user:", user._id);
+  console.log("[Backend] Authenticated user:", user._id);
 
   await connectToDB();
-  console.log("Connected to DB");
+  console.log("[Backend] Connected to database");
 
   const { searchParams } = new URL(req.url);
+  const role = searchParams.get("role") || "buyer";
   const status = searchParams.get("status");
-  const role = searchParams.get("role") || "seller";
+  const search = searchParams.get("search");
   const page = parseInt(searchParams.get("page") || "1", 10);
   const limit = parseInt(searchParams.get("limit") || "10", 10);
   const skip = (page - 1) * limit;
 
-  console.log("Parsed query params:", { status, role, page, limit, skip });
+  console.log("[Backend] Query params:", { role, status, search, page, limit });
 
   try {
+    // Build query based on role
     const query = {};
-
+    
     if (role === "seller") {
       query.seller = user._id;
     } else if (role === "buyer") {
       query.buyer = user._id;
+    } else {
+      console.log("[Backend] Invalid role specified:", role);
+      return NextResponse.json({ 
+        success: false, 
+        message: "Invalid role specified" 
+      }, { status: 400 });
     }
 
-    if (status) {
+    // Add status filter
+    if (status && status !== "all") {
       query.status = status;
     }
 
-    console.log("Final MongoDB query:", query);
+    // Add search filter
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      query.$or = [
+        { serviceTitle: searchRegex },
+        { category: searchRegex },
+        { note: searchRegex }
+      ];
+    }
 
+    console.log("[Backend] Final MongoDB query:", JSON.stringify(query, null, 2));
+
+    // Execute queries
     const [orders, total] = await Promise.all([
       Orders.find(query)
-        .populate("buyer", "name avatar username")
-        .populate("gig", "title category")
+        .populate("buyer", "name email username avatar")
+        .populate("seller", "name email username avatar")
+        .populate("gig", "title category description")
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       Orders.countDocuments(query)
     ]);
 
-    console.log(`Fetched ${orders.length} orders. Total matching orders: ${total}`);
+    console.log(`[Backend] Found ${orders.length} orders out of ${total} total`);
+
+    // Format orders for frontend
+    const formattedOrders = orders.map(order => ({
+      ...order,
+      // Ensure consistent field names
+      serviceTitle: order.gig?.title || order.serviceTitle || "Service",
+      category: order.gig?.category || order.category || "General"
+    }));
 
     return NextResponse.json({
       success: true,
-      orders,
+      orders: formattedOrders,
       pagination: {
         total,
         page,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1
       }
     });
+
   } catch (error) {
-    console.error("Error fetching orders:", error.message);
-    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
+    console.error("[Backend] Error fetching orders:", error.message);
+    return NextResponse.json({ 
+      success: false, 
+      message: "Failed to fetch orders", 
+      error: error.message 
+    }, { status: 500 });
   }
 }
 

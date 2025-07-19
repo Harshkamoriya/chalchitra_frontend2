@@ -78,6 +78,113 @@
 // const Gigs = mongoose.models.Gigs || mongoose.model('Gigs', gigSchema);
 // export default Gigs;
 
+// import mongoose from 'mongoose';
+// import slugify from 'slugify';
+
+// const packageSchema = new mongoose.Schema({
+//   name: String,
+//   price: Number,
+//   deliveryTime: Number,
+//   revisions: Number,
+//   features: [String],
+//   rushDelivery: { type: Boolean, default: false },
+//   rushTime: String,
+//   rushPrice: Number,
+//   inputLength: String,
+//   outputLength: String,
+// });
+
+// const addOnSchema = new mongoose.Schema({
+//   id: String,
+//   price: Number,
+//   deliveryTime: String,
+// });
+
+// const mediaSchema = new mongoose.Schema({
+//   coverImage: { type: String },
+//   gallery: {
+//     type: [String],
+//     validate: [val => val.length <= 3, 'Gallery exceeds limit of 3'],
+//   },
+//   video: String,
+//   pdfs: [String],
+// });
+
+// const requirementSchema = new mongoose.Schema({
+//   question: String,
+//   type: { type: String, enum: ['text', 'file', 'multiple-choice'], default: 'text' },
+//   options: [String],
+//   required: { type: Boolean, default: true },
+// });
+
+// const faqSchema = new mongoose.Schema({
+//   question: String,
+//   answer: String,
+// });
+
+// const allowedTags = [
+//   "intro", "outro", "logo animation", "color grading", "transitions",
+//   "captions", "subtitles", "sound design", "green screen", "motion graphics",
+//   "vfx", "slow motion", "timelapse", "3D", "2D animation",
+//   "voiceover sync", "storyboarding", "youtube", "instagram", "tiktok",
+//   "wedding", "gaming", "vlog", "product demo", "commercial", "corporate"
+// ];
+
+// const gigSchema = new mongoose.Schema({
+//   title: { type: String, required: true },
+//   slug: { type: String, unique: true },
+//   description: { type: String, required: true },
+//   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+//   category: {
+//     type: String,
+//     enum: [
+//       "music-video-editing",
+//       "wedding-event-editing",
+//       "commercial-ad-editing",
+//       "youtube-vlog-editing",
+//       "gaming-editing",
+//       "podcast-editing",
+//       "short-form-reels-shorts",
+//       "faceless-youtube-channel-editing",
+//       "corporate-educational-editing",
+//     ],
+//     required: true,
+//     index: true,
+//   },
+  
+// tags: [{
+//   type: String,
+//   enum: allowedTags
+// }],
+//   maxDuration: String,
+//   packages: [packageSchema],
+//   addOns: [addOnSchema],
+//   media: mediaSchema,
+//   portfolioDescription: String,
+//   portfolioWebsite: String,
+//   requirements: [requirementSchema],
+//   faq: [faqSchema],
+//   rating: {
+//     average: { type: Number, default: 0 },
+//     count: { type: Number, default: 0 },
+//   },
+//   isFeatured: { type: Boolean, default: false },
+//   status: { type: String, enum: ['published', 'paused', 'draft' , 'cancelled', 'under-eview', 'needs-changes'], default: 'draft' },
+//   createdAt: { type: Date, default: Date.now },
+// });
+
+// gigSchema.pre('save', function (next) {
+//   if (!this.isModified('title')) return next();
+//   this.slug = slugify(this.title, { lower: true, strict: true });
+//   next();
+// });
+
+// gigSchema.index({ title: 'text', tags: 'text', description: 'text' });
+
+// const Gigs = mongoose.models.Gigs || mongoose.model('Gigs', gigSchema);
+// export default Gigs;
+
+
 import mongoose from 'mongoose';
 import slugify from 'slugify';
 
@@ -85,7 +192,10 @@ const packageSchema = new mongoose.Schema({
   name: String,
   price: Number,
   deliveryTime: Number,
-  revisions: Number,
+  revisions: { 
+    type: mongoose.Schema.Types.Mixed, // Can be number or "unlimited"
+    default: 1 
+  },
   features: [String],
   rushDelivery: { type: Boolean, default: false },
   rushTime: String,
@@ -96,6 +206,7 @@ const packageSchema = new mongoose.Schema({
 
 const addOnSchema = new mongoose.Schema({
   id: String,
+  name: String,
   price: Number,
   deliveryTime: String,
 });
@@ -104,7 +215,7 @@ const mediaSchema = new mongoose.Schema({
   coverImage: { type: String },
   gallery: {
     type: [String],
-    validate: [val => val.length <= 3, 'Gallery exceeds limit of 3'],
+    validate: [val => val.length <= 5, 'Gallery exceeds limit of 5'],
   },
   video: String,
   pdfs: [String],
@@ -139,7 +250,7 @@ const gigSchema = new mongoose.Schema({
     type: String,
     enum: [
       "music-video-editing",
-      "wedding-event-editing",
+      "wedding-event-editing", 
       "commercial-ad-editing",
       "youtube-vlog-editing",
       "gaming-editing",
@@ -152,10 +263,11 @@ const gigSchema = new mongoose.Schema({
     index: true,
   },
   
-tags: [{
-  type: String,
-  enum: allowedTags
-}],
+  tags: [{
+    type: String,
+    enum: allowedTags
+  }],
+  
   maxDuration: String,
   packages: [packageSchema],
   addOns: [addOnSchema],
@@ -164,23 +276,52 @@ tags: [{
   portfolioWebsite: String,
   requirements: [requirementSchema],
   faq: [faqSchema],
+  
+  // Analytics fields
+  views: { type: Number, default: 0 },
+  impressions: { type: Number, default: 0 },
+  clicks: { type: Number, default: 0 },
+  orders: { type: Number, default: 0 },
+  favorites: { type: Number, default: 0 },
+  ordersInQueue: { type: Number, default: 0 },
+  
   rating: {
     average: { type: Number, default: 0 },
     count: { type: Number, default: 0 },
   },
+  
+  // Settings
   isFeatured: { type: Boolean, default: false },
-  status: { type: String, enum: ['published', 'paused', 'draft' , 'cancelled', 'under-eview', 'needs-changes'], default: 'draft' },
+  isAcceptingOrders: { type: Boolean, default: true },
+  hasWatermark: { type: Boolean, default: false },
+  
+  status: { 
+    type: String, 
+    enum: ['live', 'draft', 'pending', 'requires_modification', 'paused', 'denied'], 
+    default: 'draft' 
+  },
+  
+  lastModified: { type: Date, default: Date.now },
   createdAt: { type: Date, default: Date.now },
+}, {
+  timestamps: true
 });
 
+// Auto-generate slug from title
 gigSchema.pre('save', function (next) {
   if (!this.isModified('title')) return next();
   this.slug = slugify(this.title, { lower: true, strict: true });
   next();
 });
 
+// Update lastModified on save
+gigSchema.pre('save', function (next) {
+  this.lastModified = new Date();
+  next();
+});
+
+// Text search index
 gigSchema.index({ title: 'text', tags: 'text', description: 'text' });
 
 const Gigs = mongoose.models.Gigs || mongoose.model('Gigs', gigSchema);
 export default Gigs;
-
