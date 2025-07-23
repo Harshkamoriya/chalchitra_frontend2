@@ -1,8 +1,6 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,19 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
-import { Upload, X, Plus, Video, Clock, Star, Zap, Palette, Settings, TrendingUp, Info } from "lucide-react"
+import { Upload, X, Plus, Video, Clock, Star, Zap, Palette, Settings, TrendingUp, Info, Loader2 } from 'lucide-react'
 import { HoverTooltip } from "@/components/hover-tooltip"
-// import { TagAutocomplete } from "@/components/tag-autocomplete"
 import TagAutocomplete from "@/components/TagAutocomplete"
 import { ProgressTabs } from "@/components/progress-tabs"
 import { createGig } from "./action"
-import { FileImage } from "lucide-react";
-import { useRouter } from "next/navigation"
-
+import { FileImage } from 'lucide-react'
+import { useRouter, useSearchParams } from "next/navigation"
 import { saveGigSection } from "@/lib/api/savedGigSection"
-
 import { toast } from "react-toastify"
-import axios from "axios"
+import api from "@/lib/axios"
+
 export default function CreateGigPage() {
   const [currentTab, setCurrentTab] = useState("basic-info")
   const [completedSections, setCompletedSections] = useState([])
@@ -36,11 +32,12 @@ export default function CreateGigPage() {
   const [buyerQuestions, setBuyerQuestions] = useState([])
   const [addOns, setAddOns] = useState([])
   const [formErrors, setFormErrors] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
   const [uploadedUrls, setUploadedUrls] = useState({
-  coverImageUrl: '',
-  galleryUrls: [],
-  videoUrl: ''
-});
+    coverImageUrl: "",
+    galleryUrls: [],
+    videoUrl: "",
+  })
 
   const [formData, setFormData] = useState({
     title: "",
@@ -77,179 +74,342 @@ export default function CreateGigPage() {
     standardInputLength: "",
     premiumInputLength: "",
   })
-  const [gigId, setGigId] = useState(null)
-const [coverFile, setCoverFile] = useState(null);
-const [galleryFiles, setGalleryFiles] = useState([]);
-const [videoFile, setVideoFile] = useState(null);
-const router = useRouter();
 
-const allowedTags = [
-  "intro", "outro", "logo animation", "color grading", "transitions",
-  "captions", "subtitles", "sound design", "green screen", "motion graphics",
-  "vfx", "slow motion", "timelapse", "3D", "2D animation",
-  "voiceover sync", "storyboarding", "youtube", "instagram", "tiktok",
-  "wedding", "gaming", "vlog", "product demo", "commercial", "corporate"
-];
+  const [coverFile, setCoverFile] = useState(null)
+  const [galleryFiles, setGalleryFiles] = useState([])
+  const [videoFile, setVideoFile] = useState(null)
 
-const handleCoverChange = (e) => {
-  setCoverFile(e.target.files[0]);
-};
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const gigId = searchParams.get("gigId") // Get gigId from query params
 
-const handleGalleryChange = (e) => {
-  setGalleryFiles(Array.from(e.target.files));
-};
+  const allowedTags = [
+    "intro", "outro", "logo animation", "color grading", "transitions",
+    "captions", "subtitles", "sound design", "green screen", "motion graphics",
+    "vfx", "slow motion", "timelapse", "3D", "2D animation",
+    "voiceover sync", "storyboarding", "youtube", "instagram", "tiktok",
+    "wedding", "gaming", "vlog", "product demo", "commercial", "corporate"
+  ]
 
-const handleVideoChange = (e) => {
-  setVideoFile(e.target.files[0]);
-};
-
-const handleCoverUpload = async (file) => {
-  if (!file) return toast.error("Please select a cover image first.");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "unsigned_gigs");
-  formData.append("folder", "gigs");
-
-  try {
-    const toastId = toast.loading("Uploading cover image...");
-    const res = await fetch("https://api.cloudinary.com/v1_1/dwqduwu63/image/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      toast.dismiss(toastId);
-      return toast.error("Cover upload failed: " + (errorData.error?.message || "Unknown error"));
+  // Helper function to map backend gig data to frontend form structure
+  const mapGigDataToForm = (gigData) => {
+    console.log("Mapping gig data:", gigData)
+    
+    // Map basic info
+    const mappedFormData = {
+      title: gigData.title || "",
+      category: gigData.category || "",
+      description: gigData.description || "",
+      portfolioDescription: gigData.portfolioDescription || "",
+      portfolioWebsite: gigData.portfolioWebsite || "",
+      maxDuration: gigData.maxDuration || "",
+      // Initialize package data
+      basicPrice: "",
+      standardPrice: "",
+      premiumPrice: "",
+      basicDeliveryTime: "",
+      standardDeliveryTime: "",
+      premiumDeliveryTime: "",
+      basicRevisions: "",
+      standardRevisions: "",
+      premiumRevisions: "",
+      basicFeatures: [],
+      standardFeatures: [],
+      premiumFeatures: [],
+      basicRushDelivery: false,
+      standardRushDelivery: false,
+      premiumRushDelivery: false,
+      basicRushTime: "",
+      standardRushTime: "",
+      premiumRushTime: "",
+      basicRushPrice: "",
+      standardRushPrice: "",
+      premiumRushPrice: "",
+      basicOutputLength: "",
+      standardOutputLength: "",
+      premiumOutputLength: "",
+      basicInputLength: "",
+      standardInputLength: "",
+      premiumInputLength: "",
     }
 
-    const data = await res.json();
-    console.log("Cover uploaded:", data.secure_url);
-    setUploadedUrls((prev) => ({ ...prev, coverImageUrl: data.secure_url }));
-    toast.dismiss(toastId);
-    toast.success("Cover image uploaded!");
-  } catch (error) {
-    console.error(error);
-    toast.dismiss();
-    toast.error("Cover upload failed");
+    // Map packages data
+    if (gigData.packages && Array.isArray(gigData.packages)) {
+      gigData.packages.forEach((pkg, index) => {
+        const tierName = index === 0 ? "basic" : index === 1 ? "standard" : "premium"
+        
+        mappedFormData[`${tierName}Price`] = pkg.price?.toString() || ""
+        mappedFormData[`${tierName}DeliveryTime`] = pkg.deliveryTime?.toString() || ""
+        mappedFormData[`${tierName}Revisions`] = pkg.revisions?.toString() || ""
+        mappedFormData[`${tierName}Features`] = pkg.features || []
+        mappedFormData[`${tierName}RushDelivery`] = pkg.rushDelivery || false
+        mappedFormData[`${tierName}RushTime`] = pkg.rushTime || ""
+        mappedFormData[`${tierName}RushPrice`] = pkg.rushPrice?.toString() || ""
+        mappedFormData[`${tierName}OutputLength`] = pkg.outputLength || ""
+        mappedFormData[`${tierName}InputLength`] = pkg.inputLength || ""
+      })
+    }
+
+    return mappedFormData
   }
-};
 
+  // Helper function to map backend requirements to frontend format
+  const mapRequirementsToForm = (requirements) => {
+    if (!requirements || !Array.isArray(requirements)) return []
+    
+    return requirements.map((req, index) => ({
+      id: index + 1,
+      text: req.question || "",
+      checked: req.required || false,
+    }))
+  }
 
-const handleGalleryUpload = async (files) => {
-  if (!files.length) return toast.error("Please select gallery images first.");
-  const urls = [];
+  // Helper function to map backend FAQ to frontend questions format
+  const mapFaqToQuestions = (faq) => {
+    if (!faq || !Array.isArray(faq)) return []
+    
+    return faq.map((item, index) => ({
+      id: index + 1,
+      question: item.question || "",
+    }))
+  }
 
-  const toastId = toast.loading("Uploading gallery images...");
-  try {
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", "unsigned_gigs");
-      formData.append("folder", "gigs");
-      
+  // Helper function to map backend addOns to frontend format
+  const mapAddOnsToForm = (addOns) => {
+    if (!addOns || !Array.isArray(addOns)) return []
+    
+    return addOns.map((addOn) => ({
+      id: addOn.id || addOn._id,
+      price: addOn.price?.toString() || "",
+      deliveryTime: addOn.deliveryTime || "",
+    }))
+  }
+
+  // Load gig data for editing
+  useEffect(() => {
+    const loadGigData = async () => {
+      if (!gigId) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        console.log("Loading gig data for ID:", gigId)
+        
+        const res = await api.get(`/api/user/gigs/${gigId}`)
+        
+        if (res.data.success && res.data.gig) {
+          const gigData = res.data.gig
+          console.log("Received gig data:", gigData)
+
+          // Map form data
+          const mappedFormData = mapGigDataToForm(gigData)
+          setFormData(mappedFormData)
+
+          // Map other data
+          setTags(gigData.tags || [])
+          setBuyerRequirements(mapRequirementsToForm(gigData.requirements))
+          setBuyerQuestions(mapFaqToQuestions(gigData.faq))
+          setAddOns(mapAddOnsToForm(gigData.addOns))
+
+          // Map media URLs
+          if (gigData.media) {
+            setUploadedUrls({
+              coverImageUrl: gigData.media.coverImage || "",
+              galleryUrls: gigData.media.gallery || [],
+              videoUrl: gigData.media.video || "",
+            })
+          }
+
+          // Set completed sections based on available data
+          const completed = []
+          if (gigData.title && gigData.category && gigData.description && gigData.tags?.length >= 3) {
+            completed.push("basic-info")
+          }
+          if (gigData.maxDuration) {
+            completed.push("service-details")
+          }
+          if (gigData.packages?.length > 0 && gigData.packages[0]?.price) {
+            completed.push("pricing")
+          }
+          if (gigData.media?.coverImage || gigData.portfolioWebsite) {
+            completed.push("portfolio")
+          }
+          if (gigData.requirements?.length > 0 && gigData.faq?.length > 0) {
+            completed.push("requirements")
+          }
+
+          setCompletedSections(completed)
+
+          // toast.success("Gig data loaded successfully!")
+        } else {
+          toast.error("Failed to load gig data")
+        }
+      } catch (error) {
+        console.error("Error loading gig data:", error)
+        toast.error("Failed to load gig data: " + (error.response?.data?.message || error.message))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadGigData()
+  }, [gigId])
+
+  // Save form data to localStorage whenever it changes (only for new gigs)
+  useEffect(() => {
+    if (!gigId) {
+      const dataToSave = {
+        formData,
+        tags,
+        portfolioFiles,
+        buyerRequirements,
+        buyerQuestions,
+        addOns,
+        completedSections,
+        uploadedUrls,
+      }
+      localStorage.setItem("gigFormData", JSON.stringify(dataToSave))
+    }
+  }, [formData, tags, portfolioFiles, buyerRequirements, buyerQuestions, addOns, completedSections, uploadedUrls, gigId])
+
+  // Load from localStorage for new gigs only
+  useEffect(() => {
+    if (!gigId) {
+      const savedData = localStorage.getItem("gigFormData")
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData)
+          setFormData(parsedData.formData || {})
+          setTags(parsedData.tags || [])
+          setPortfolioFiles(parsedData.portfolioFiles || [])
+          setBuyerRequirements(parsedData.buyerRequirements || [])
+          setBuyerQuestions(parsedData.buyerQuestions || [])
+          setAddOns(parsedData.addOns || [])
+          setCompletedSections(parsedData.completedSections || [])
+          setUploadedUrls(parsedData.uploadedUrls || { coverImageUrl: "", galleryUrls: [], videoUrl: "" })
+        } catch (error) {
+          console.error("Error loading saved form data:", error)
+        }
+      }
+    }
+  }, [gigId])
+
+  const handleCoverChange = (e) => {
+    setCoverFile(e.target.files[0])
+  }
+
+  const handleGalleryChange = (e) => {
+    setGalleryFiles(Array.from(e.target.files))
+  }
+
+  const handleVideoChange = (e) => {
+    setVideoFile(e.target.files[0])
+  }
+
+  const handleCoverUpload = async (file) => {
+    if (!file) return toast.error("Please select a cover image first.")
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("upload_preset", "unsigned_gigs")
+    formData.append("folder", "gigs")
+
+    try {
+      const toastId = toast.loading("Uploading cover image...")
       const res = await fetch("https://api.cloudinary.com/v1_1/dwqduwu63/image/upload", {
         method: "POST",
         body: formData,
-      });
+      })
 
       if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Gallery image upload failed:", errorData);
-        continue; // skip failed image
+        const errorData = await res.json()
+        toast.dismiss(toastId)
+        return toast.error("Cover upload failed: " + (errorData.error?.message || "Unknown error"))
       }
 
-      const data = await res.json();
-      urls.push(data.secure_url);
+      const data = await res.json()
+      console.log("Cover uploaded:", data.secure_url)
+      setUploadedUrls((prev) => ({ ...prev, coverImageUrl: data.secure_url }))
+      toast.dismiss(toastId)
+      toast.success("Cover image uploaded!")
+    } catch (error) {
+      console.error(error)
+      toast.dismiss()
+      toast.error("Cover upload failed")
     }
-    setUploadedUrls((prev) => ({ ...prev, galleryUrls: urls }));
-    console.log("Gallery uploaded:", urls);
-    toast.dismiss(toastId);
-    toast.success("Gallery images uploaded!");
-  } catch (error) {
-    console.error(error);
-    toast.dismiss(toastId);
-    toast.error("Gallery upload failed");
   }
-};
 
-const handleVideoUpload = async (file) => {
-  if (!file) return toast.error("Please select a video first.");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "unsigned_gigs");
-  formData.append("folder", "gigs/videos");
+  const handleGalleryUpload = async (files) => {
+    if (!files.length) return toast.error("Please select gallery images first.")
+    const urls = []
+    const toastId = toast.loading("Uploading gallery images...")
 
-  try {
-    toast.loading("Uploading video...");
+    try {
+      for (const file of files) {
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("upload_preset", "unsigned_gigs")
+        formData.append("folder", "gigs")
 
-    const res = await fetch("https://api.cloudinary.com/v1_1/dwqduwu63/video/upload", {
-      method: "POST",
-      body: formData,
-    });
+        const res = await fetch("https://api.cloudinary.com/v1_1/dwqduwu63/image/upload", {
+          method: "POST",
+          body: formData,
+        })
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Video upload failed:", errorData);
-      toast.dismiss();
-      return toast.error("Video upload failed: " + (errorData.error?.message || "Unknown error"));
-    }
+        if (!res.ok) {
+          const errorData = await res.json()
+          console.error("Gallery image upload failed:", errorData)
+          continue // skip failed image
+        }
 
-    const data = await res.json();
-    console.log("Video uploaded:", data.secure_url);
-
-    setUploadedUrls((prev) => ({ ...prev, videoUrl: data.secure_url }));
-    toast.dismiss();
-    toast.success("Video uploaded successfully!");
-
-  } catch (error) {
-    console.error("Video upload error:", error);
-    toast.dismiss();
-    toast.error("Video upload failed");
-  }
-};
-
-
-
-
-
-
-
-  // Load saved form data from localStorage on initial load
-  useEffect(() => {
-    const savedData = localStorage.getItem("gigFormData")
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData)
-        setFormData(parsedData.formData || formData)
-        setTags(parsedData.tags || [])
-        setPortfolioFiles(parsedData.portfolioFiles || [])
-        setBuyerRequirements(parsedData.buyerRequirements || [])
-        setBuyerQuestions(parsedData.buyerQuestions || [])
-        setAddOns(parsedData.addOns || [])
-        setCompletedSections(parsedData.completedSections || [])
-        setUploadedUrls(parsedData.uploadedUrls || { coverImageUrl: '', galleryUrls: [], videoUrl: '' });  // ✅ add this line
-
-      } catch (error) {
-        console.error("Error loading saved form data:", error)
+        const data = await res.json()
+        urls.push(data.secure_url)
       }
-    }
-  }, [])
 
-  // Save form data to localStorage whenever it changes
-  useEffect(() => {
-    const dataToSave = {
-      formData,
-      tags,
-      portfolioFiles,
-      buyerRequirements,
-      buyerQuestions,
-      addOns,
-      completedSections,
-      uploadedUrls
+      setUploadedUrls((prev) => ({ ...prev, galleryUrls: urls }))
+      console.log("Gallery uploaded:", urls)
+      toast.dismiss(toastId)
+      toast.success("Gallery images uploaded!")
+    } catch (error) {
+      console.error(error)
+      toast.dismiss(toastId)
+      toast.error("Gallery upload failed")
     }
-    localStorage.setItem("gigFormData", JSON.stringify(dataToSave))
-  }, [formData, tags, portfolioFiles, buyerRequirements, buyerQuestions, addOns, completedSections, uploadedUrls])
+  }
+
+  const handleVideoUpload = async (file) => {
+    if (!file) return toast.error("Please select a video first.")
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("upload_preset", "unsigned_gigs")
+    formData.append("folder", "gigs/videos")
+
+    try {
+      toast.loading("Uploading video...")
+      const res = await fetch("https://api.cloudinary.com/v1_1/dwqduwu63/video/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        console.error("Video upload failed:", errorData)
+        toast.dismiss()
+        return toast.error("Video upload failed: " + (errorData.error?.message || "Unknown error"))
+      }
+
+      const data = await res.json()
+      console.log("Video uploaded:", data.secure_url)
+      setUploadedUrls((prev) => ({ ...prev, videoUrl: data.secure_url }))
+      toast.dismiss()
+      toast.success("Video uploaded successfully!")
+    } catch (error) {
+      console.error("Video upload error:", error)
+      toast.dismiss()
+      toast.error("Video upload failed")
+    }
+  }
 
   const handleInputChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -258,40 +418,32 @@ const handleVideoUpload = async (file) => {
       setFormErrors((prev) => ({ ...prev, [name]: null }))
     }
   }
-const addTag = (newTag) => {
-  const tag = newTag.trim().toLowerCase();
 
-  // Always compare ignoring case
-  const matchedAllowedTag = allowedTags.find(t => t.toLowerCase() === tag);
-  if (!matchedAllowedTag) {
-    setFormErrors(prev => ({ ...prev, tags: `"${newTag}" is not an allowed tag.` }));
-    return;
+  const addTag = (newTag) => {
+    const tag = newTag.trim().toLowerCase()
+    // Always compare ignoring case
+    const matchedAllowedTag = allowedTags.find((t) => t.toLowerCase() === tag)
+    if (!matchedAllowedTag) {
+      setFormErrors((prev) => ({ ...prev, tags: `"${newTag}" is not an allowed tag.` }))
+      return
+    }
+    if (tags.includes(matchedAllowedTag)) {
+      setFormErrors((prev) => ({ ...prev, tags: "Tag already added." }))
+      return
+    }
+    if (tags.length >= 5) {
+      setFormErrors((prev) => ({ ...prev, tags: "You can add up to 5 tags only." }))
+      return
+    }
+    setTags((prev) => [...prev, matchedAllowedTag])
+    setCurrentTag("") // clear input
+    setFormErrors((prev) => ({ ...prev, tags: null }))
   }
 
-  if (tags.includes(matchedAllowedTag)) {
-    setFormErrors(prev => ({ ...prev, tags: "Tag already added." }));
-    return;
+  const removeTag = (tagToRemove) => {
+    setTags((prev) => prev.filter((tag) => tag !== tagToRemove))
+    setFormErrors((prev) => ({ ...prev, tags: null })) // optional: clear error on remove
   }
-
-  if (tags.length >= 5) {
-    setFormErrors(prev => ({ ...prev, tags: "You can add up to 5 tags only." }));
-    return;
-  }
-
-  setTags(prev => [...prev, matchedAllowedTag]);
-  setCurrentTag(""); // clear input
-  setFormErrors(prev => ({ ...prev, tags: null }));
-};
-
-
-
-const removeTag = (tagToRemove) => {
-  setTags(prev => prev.filter(tag => tag !== tagToRemove));
-  setFormErrors(prev => ({ ...prev, tags: null })); // optional: clear error on remove
-};
-
-
- 
 
   const removeFile = (index) => {
     setPortfolioFiles(portfolioFiles.filter((_, i) => i !== index))
@@ -339,96 +491,89 @@ const removeTag = (tagToRemove) => {
   // Validation functions for each section
   const validateBasicInfo = () => {
     const errors = {}
-
     if (!formData.title.trim()) {
       errors.title = "Title is required"
     }
-
     if (!formData.category) {
       errors.category = "Category is required"
     }
-
     if (!formData.description.trim()) {
       errors.description = "Description is required"
     }
-
     if (tags.length < 3) {
       errors.tags = "At least 3 tags are required"
     }
-
     return errors
   }
 
   const validateServiceDetails = () => {
     const errors = {}
-
     if (!formData.maxDuration) {
       errors.maxDuration = "Maximum duration is required"
     }
-
     return errors
   }
 
   const validatePricing = () => {
     const errors = {}
-
     if (!formData.basicPrice) {
       errors.basicPrice = "Basic price is required"
     }
-
     if (!formData.basicDeliveryTime) {
       errors.basicDeliveryTime = "Basic delivery time is required"
     }
-
     if (!formData.basicRevisions) {
       errors.basicRevisions = "Basic revisions is required"
     }
-
     return errors
   }
 
   const validatePortfolio = () => {
     const errors = {}
-
-    if (portfolioFiles.length === 0 && !formData.portfolioWebsite) {
-      errors.portfolio = "Either upload files or provide a portfolio website"
+    if (!uploadedUrls.coverImageUrl && !formData.portfolioWebsite) {
+      errors.portfolio = "Either upload a cover image or provide a portfolio website"
     }
-
     return errors
   }
 
   const validateRequirements = () => {
     const errors = {}
-
     if (buyerRequirements.filter((req) => req.text.trim()).length === 0) {
       errors.buyerRequirements = "At least one requirement is needed"
     }
-
     if (buyerQuestions.filter((q) => q.question.trim()).length === 0) {
       errors.buyerQuestions = "At least one question is needed"
     }
-
     return errors
   }
 
-// handle submit function to mark the gig as published
+  // handle submit function to mark the gig as published
+  const handleSubmit = async () => {
+    try {
+      const token = sessionStorage.getItem("accessToken")
+      const sectionData = {
+        status: "live",
+      }
 
-const handleSubmit = async()=>{
-  try {
-    const token = sessionStorage.getItem("accessToken");
-    const sectionData = {
-      status:"published"
+      const updatedgig = await saveGigSection(gigId, sectionData, token)
+
+      if (!updatedgig) {
+        console.log("⚠️ Gig status not updated successfully", updatedgig)
+      }
+
+      toast.success("Your gig has been published successfully!")
+
+      // Clear localStorage for new gigs
+      if (!gigId) {
+        localStorage.removeItem("gigFormData")
+      }
+
+      router.push("/seller/manage/gigs") // Redirect to manage gigs
+    } catch (error) {
+      console.error("Error publishing gig:", error)
+      toast.error("Failed to publish gig")
     }
-     const updatedgig  = await saveGigSection(gigId , sectionData  , token);
-     if(!updatedgig){
-      console.log("⚠️ Gig status  not updated successfully", updatedgig)
-     }
-     toast.success("Your gig has been published successfully!")
-     router.push("/seller/manage/gigs") // Redirect to manage gigs
-  } catch (error) {
-    console.error("Error publishing gig:", error)
   }
-}
 
   // Get validation function for current tab
   const getValidationForTab = (tabId) => {
@@ -450,160 +595,129 @@ const handleSubmit = async()=>{
 
   // Tab navigation with validation
   const sections = ["basic-info", "service-details", "pricing", "portfolio", "requirements"]
-
   const handleNext = async () => {
     // Validate current section
     const validateFn = getValidationForTab(currentTab)
     const errors = validateFn()
-
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
-
       // Show Toaster with error message
-   
-toast.error("Please fix the errors: Some required fields need your attention")
-
-      return ;
+      toast.error("Please fix the errors: Some required fields need your attention")
+      return
     }
 
     // Clear errors
     setFormErrors({})
 
-      let sectionData = {}
-
-  switch (currentTab) {
-    case "basic-info":
-      sectionData = {
-        title: formData.title,
-        category: formData.category,
-        description: formData.description,
-        tags,
-      }
-      break
-    case "service-details":
-      sectionData = {
-        maxDuration: formData.maxDuration,
-      }
-      break
-    case "pricing":
-      sectionData = {
-        packages: [
-          {
-            name: "Basic",
-            price: formData.basicPrice,
-            deliveryTime: formData.basicDeliveryTime,
-            revisions: formData.basicRevisions,
-            features: formData.basicFeatures,
-            rushDelivery: formData.basicRushDelivery,
-            rushTime: formData.basicRushTime,
-            rushPrice: formData.basicRushPrice,
-            inputLength: formData.basicInputLength,
-            outputLength: formData.basicOutputLength,
+    let sectionData = {}
+    switch (currentTab) {
+      case "basic-info":
+        sectionData = {
+          title: formData.title,
+          category: formData.category,
+          description: formData.description,
+          tags,
+        }
+        break
+      case "service-details":
+        sectionData = {
+          maxDuration: formData.maxDuration,
+        }
+        break
+      case "pricing":
+        sectionData = {
+          packages: [
+            {
+              name: "Basic",
+              price: formData.basicPrice,
+              deliveryTime: formData.basicDeliveryTime,
+              revisions: formData.basicRevisions,
+              features: formData.basicFeatures,
+              rushDelivery: formData.basicRushDelivery,
+              rushTime: formData.basicRushTime,
+              rushPrice: formData.basicRushPrice,
+              inputLength: formData.basicInputLength,
+              outputLength: formData.basicOutputLength,
+            },
+            {
+              name: "Standard",
+              price: formData.standardPrice,
+              deliveryTime: formData.standardDeliveryTime,
+              revisions: formData.standardRevisions,
+              features: formData.standardFeatures,
+              rushDelivery: formData.standardRushDelivery,
+              rushTime: formData.standardRushTime,
+              rushPrice: formData.standardRushPrice,
+              inputLength: formData.standardInputLength,
+              outputLength: formData.standardOutputLength,
+            },
+            {
+              name: "Premium",
+              price: formData.premiumPrice,
+              deliveryTime: formData.premiumDeliveryTime,
+              revisions: formData.premiumRevisions,
+              features: formData.premiumFeatures,
+              rushDelivery: formData.premiumRushDelivery,
+              rushTime: formData.premiumRushTime,
+              rushPrice: formData.premiumRushPrice,
+              inputLength: formData.premiumInputLength,
+              outputLength: formData.premiumOutputLength,
+            },
+          ],
+          addOns,
+        }
+        break
+      case "portfolio":
+        sectionData = {
+          media: {
+            coverImage: uploadedUrls.coverImageUrl || "",
+            gallery: uploadedUrls.galleryUrls || [],
+            video: uploadedUrls.videoUrl || "",
           },
-          {
-            name: "Standard",
-            price: formData.standardPrice,
-            deliveryTime: formData.standardDeliveryTime,
-            revisions: formData.standardRevisions,
-            features: formData.standardFeatures,
-            rushDelivery: formData.standardRushDelivery,
-            rushTime: formData.standardRushTime,
-            rushPrice: formData.standardRushPrice,
-            inputLength: formData.standardInputLength,
-            outputLength: formData.standardOutputLength,
-          },
-          {
-            name: "Premium",
-            price: formData.premiumPrice,
-            deliveryTime: formData.premiumDeliveryTime,
-            revisions: formData.premiumRevisions,
-            features: formData.premiumFeatures,
-            rushDelivery: formData.premiumRushDelivery,
-            rushTime: formData.premiumRushTime,
-            rushPrice: formData.premiumRushPrice,
-            inputLength: formData.premiumInputLength,
-            outputLength: formData.premiumOutputLength,
-          },
-        ],
-        addOns,
-      }
-      break
-    case "portfolio":
-      sectionData = {
-  media: {
-    
-    coverImage: uploadedUrls.coverImageUrl || "",
-    gallery: uploadedUrls.galleryUrls || [],
-    video: uploadedUrls.videoUrl || "",
-  },
-  portfolioDescription: formData.portfolioDescription,
-  portfolioWebsite: formData.portfolioWebsite,
-}
-      break
-    case "requirements":
-      sectionData = {
-        requirements: buyerRequirements.map((req) => ({
-          question: req.text,
-          type: "text",
-          required: req.checked,
-        })),
-        faq: buyerQuestions.map((q) => ({
-          question: q.question,
-          answer: "",
-        })),
-        addOns,
-        
-      }
-      break
-  }
-
-  try {
-    const token = sessionStorage.getItem("accessToken")
-    const updatedGig = await saveGigSection(gigId, sectionData, token)
-    if (!updatedGig) {
-    console.log("⚠️ Gig is not created successfully", updatedGig)
-  }
-
-    // Store returned gigId (on first creation)
-    if (!gigId) setGigId(updatedGig._id)
-
-    // Mark section complete
-    if (!completedSections.includes(currentTab)) {
-      setCompletedSections((prev) => [...prev, currentTab])
+          portfolioDescription: formData.portfolioDescription,
+          portfolioWebsite: formData.portfolioWebsite,
+        }
+        break
+      case "requirements":
+        sectionData = {
+          requirements: buyerRequirements.map((req) => ({
+            question: req.text,
+            type: "text",
+            required: req.checked,
+          })),
+          faq: buyerQuestions.map((q) => ({
+            question: q.question,
+            answer: "",
+          })),
+          addOns,
+        }
+        break
     }
 
-    if (isLastStep) {
-      console.log("Final step reached, submitting...")
-       handleSubmit()
-       // Redirect to manage gigs
-      // // optional
-    } else {
-      const currentIndex = sections.indexOf(currentTab)
-      setCurrentTab(sections[currentIndex + 1])
-    }
-  } catch (err) {
-    console.error("Error saving gig:", err)
-    toast.error(`Save Failed: ${err.message}`)
+    try {
+      const token = sessionStorage.getItem("accessToken")
+      const updatedGig = await saveGigSection(gigId, sectionData, token)
+      if (!updatedGig) {
+        console.log("⚠️ Gig is not created successfully", updatedGig)
+      }
 
-  }
+      // Mark section complete
+      if (!completedSections.includes(currentTab)) {
+        setCompletedSections((prev) => [...prev, currentTab])
+      }
 
-    // Mark current section as completed if not already
-    if (!completedSections.includes(currentTab)) {
-      setCompletedSections((prev) => [...prev, currentTab])
-    }
-
-    // if the current tab is the last tab and all the tabs are fullfilled 
-    // if(isLastStep){
-    //     console.log("at last step or last tab")
-       
-    //     router.push("/seller/manage/gigs")
-        
-    // }
-
-    // Navigate to next tab
-    const currentIndex = sections.indexOf(currentTab)
-    if (currentIndex < sections.length - 1) {
-      setCurrentTab(sections[currentIndex + 1])
+      if (isLastStep) {
+        console.log("Final step reached, submitting...")
+        handleSubmit()
+        // Redirect to manage gigs
+        // // optional
+      } else {
+        const currentIndex = sections.indexOf(currentTab)
+        setCurrentTab(sections[currentIndex + 1])
+      }
+    } catch (err) {
+      console.error("Error saving gig:", err)
+      toast.error(`Save Failed: ${err.message}`)
     }
   }
 
@@ -642,22 +756,14 @@ toast.error("Please fix the errors: Some required fields need your attention")
 
   const videoCategories = [
     "Music Video Editing",
-
-"Wedding/Event Editing",
-
-"Commercial/Ad Editing",
-
-"YouTube/Vlog Editing",
-
-"Gaming Editing",
-
-"Podcast Editing",
-
-"Short-form (Reels, Shorts)",
-
-"Faceless YouTube Channel Editing",
-
-"Corporate/Educational Editing",
+    "Wedding/Event Editing",
+    "Commercial/Ad Editing",
+    "YouTube/Vlog Editing",
+    "Gaming Editing",
+    "Podcast Editing",
+    "Short-form (Reels, Shorts)",
+    "Faceless YouTube Channel Editing",
+    "Corporate/Educational Editing",
   ]
 
   const packageFeatures = [
@@ -701,26 +807,41 @@ toast.error("Please fix the errors: Some required fields need your attention")
     "Any specific deadline requirements?",
   ]
 
-  // Initialize default requirements and questions
+  // Initialize default requirements and questions for new gigs only
   useEffect(() => {
-    if (buyerRequirements.length === 0) {
-      setBuyerRequirements(
-        defaultRequirements.map((req, index) => ({
-          id: index + 1,
-          text: req,
-          checked: true,
-        })),
-      )
+    if (!gigId) {
+      if (buyerRequirements.length === 0) {
+        setBuyerRequirements(
+          defaultRequirements.map((req, index) => ({
+            id: index + 1,
+            text: req,
+            checked: true,
+          }))
+        )
+      }
+      if (buyerQuestions.length === 0) {
+        setBuyerQuestions(
+          defaultQuestions.map((q, index) => ({
+            id: index + 1,
+            question: q,
+          }))
+        )
+      }
     }
-    if (buyerQuestions.length === 0) {
-      setBuyerQuestions(
-        defaultQuestions.map((q, index) => ({
-          id: index + 1,
-          question: q,
-        })),
-      )
-    }
-  }, [])
+  }, [gigId])
+
+  // Show loading state while fetching gig data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Gig Data</h2>
+          <p className="text-gray-600">Please wait while we fetch your gig information...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -731,12 +852,14 @@ toast.error("Please fix the errors: Some required fields need your attention")
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Create Your Video Editing Gig
+            {gigId ? "Edit Your Video Editing Gig" : "Create Your Video Editing Gig"}
           </h1>
           <p className="text-gray-600 text-lg leading-relaxed">
-            Showcase your video editing skills and attract clients with a compelling gig
+            {gigId 
+              ? "Update your gig details to attract more clients" 
+              : "Showcase your video editing skills and attract clients with a compelling gig"
+            }
           </p>
-
           <div className="mt-8 flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2 text-emerald-600">
               <TrendingUp className="h-4 w-4" />
@@ -748,11 +871,7 @@ toast.error("Please fix the errors: Some required fields need your attention")
 
         <form action={createGig} className="space-y-10">
           <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <ProgressTabs
-              value={currentTab}
-              onValueChange={setCurrentTab}
-              completedSections={completedSections}
-            />
+            <ProgressTabs value={currentTab} onValueChange={setCurrentTab} completedSections={completedSections} />
 
             {/* Basic Info Tab */}
             <TabsContent value="basic-info" className="space-y-8">
@@ -773,7 +892,8 @@ toast.error("Please fix the errors: Some required fields need your attention")
                       <div className="space-y-4">
                         <Label className="text-gray-800 font-semibold text-xl block">Gig Title *</Label>
                         <p className="text-gray-600 text-sm mb-4">
-                          Create a title that clearly describes what you offer. Include your main service and target audience.
+                          Create a title that clearly describes what you offer. Include your main service and target
+                          audience.
                         </p>
                         <HoverTooltip content={tooltips.title}>
                           <Input
@@ -810,11 +930,14 @@ toast.error("Please fix the errors: Some required fields need your attention")
                             examples: ["YouTube Videos for content creators", "Wedding Videos for couples"],
                           }}
                         >
-                          <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                          <Select
+                            value={formData.category}
+                            onValueChange={(value) => handleInputChange("category", value)}
+                          >
                             <SelectTrigger
                               className={cn(
                                 "h-14 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-lg",
-                                formErrors.category && "border-red-500"
+                                formErrors.category && "border-red-500",
                               )}
                             >
                               <SelectValue placeholder="Select your video editing specialty" />
@@ -833,53 +956,60 @@ toast.error("Please fix the errors: Some required fields need your attention")
                     </div>
 
                     {/* Right Column */}
-                     <div className="space-y-10">
-      <div className="space-y-4">
-        <label className="text-gray-800 font-semibold text-xl block">Search Tags *</label>
-        <p className="text-gray-600 text-sm mb-4">
-          Add keywords buyers would use to find your service.
-        </p>
-        <TagAutocomplete
-        allowedTags={allowedTags}
-          value={currentTag}
-          onChange={setCurrentTag}
-          onAdd={addTag}
-          disabled={tags.length >= 5}
-          placeholder="e.g., youtube, cinematic, color grading"
-        />
-        {formErrors.tags && <p className="text-red-500 text-sm mt-2">{formErrors.tags}</p>}
+                    <div className="space-y-10">
+                      <div className="space-y-4">
+                        <label className="text-gray-800 font-semibold text-xl block">Search Tags *</label>
+                        <p className="text-gray-600 text-sm mb-4">
+                          Add keywords buyers would use to find your service.
+                        </p>
+                        <TagAutocomplete
+                          allowedTags={allowedTags}
+                          value={currentTag}
+                          onChange={setCurrentTag}
+                          onAdd={addTag}
+                          disabled={tags.length >= 5}
+                          placeholder="e.g., youtube, cinematic, color grading"
+                        />
+                        {formErrors.tags && <p className="text-red-500 text-sm mt-2">{formErrors.tags}</p>}
+                        <div className="flex flex-wrap gap-3 mt-6">
+                          {tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 text-base font-medium rounded-full"
+                            >
+                              {tag.replace(/\b\w/g, (l) => l.toUpperCase())}
+                              <svg
+                                onClick={() => removeTag(tag)}
+                                className="h-4 w-4 cursor-pointer hover:text-blue-900"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-4 flex items-center gap-2">
+                          <span className="font-medium">{tags.length}/5 tags</span>
+                          <span>•</span>
+                          <span>Tags help buyers find your gig</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-        <div className="flex flex-wrap gap-3 mt-6">
-          {tags.map(tag => (
-            <span
-              key={tag}
-              className="flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 text-base font-medium rounded-full"
-            >
-              {tag.replace(/\b\w/g, l => l.toUpperCase())}
-              <svg
-                onClick={() => removeTag(tag)}
-                className="h-4 w-4 cursor-pointer hover:text-blue-900"
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </span>
-          ))}
-        </div>
-
-        <p className="text-sm text-gray-500 mt-4 flex items-center gap-2">
-          <span className="font-medium">{tags.length}/5 tags</span>
-          <span>•</span>
-          <span>Tags help buyers find your gig</span>
-        </p>
-      </div>
-    </div>
-    </div>
                   {/* Full Width Description */}
                   <div className="mt-12 space-y-4">
                     <Label className="text-gray-800 font-semibold text-xl block">Service Description *</Label>
                     <p className="text-gray-600 text-sm mb-4">
-                      Describe your experience, process, and what makes you unique. Include your years of experience, software expertise, and editing style.
+                      Describe your experience, process, and what makes you unique. Include your years of experience,
+                      software expertise, and editing style.
                     </p>
                     <HoverTooltip content={tooltips.description}>
                       <Textarea
@@ -924,7 +1054,9 @@ toast.error("Please fix the errors: Some required fields need your attention")
                     {/* Left Column */}
                     <div className="space-y-10">
                       <div className="space-y-4">
-                        <Label className="text-gray-800 font-semibold text-xl block">Maximum Video Duration (minutes) *</Label>
+                        <Label className="text-gray-800 font-semibold text-xl block">
+                          Maximum Video Duration (minutes) *
+                        </Label>
                         <p className="text-gray-600 text-sm mb-4">
                           Set realistic limits based on your capacity and pricing structure.
                         </p>
@@ -943,14 +1075,16 @@ toast.error("Please fix the errors: Some required fields need your attention")
                             placeholder="e.g., 30"
                             className={cn(
                               "h-14 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-lg",
-                              formErrors.maxDuration && "border-red-500"
+                              formErrors.maxDuration && "border-red-500",
                             )}
                             min="1"
                             max="300"
                             required
                           />
                         </HoverTooltip>
-                        {formErrors.maxDuration && <p className="text-red-500 text-sm mt-2">{formErrors.maxDuration}</p>}
+                        {formErrors.maxDuration && (
+                          <p className="text-red-500 text-sm mt-2">{formErrors.maxDuration}</p>
+                        )}
                       </div>
 
                       <div className="space-y-6">
@@ -1004,7 +1138,10 @@ toast.error("Please fix the errors: Some required fields need your attention")
                 <CardContent className="p-10">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
                     {["basic", "standard", "premium"].map((tier, index) => (
-                      <Card key={tier} className={`${index === 1 ? "border-blue-500 shadow-lg scale-105" : "border-gray-200"}`}>
+                      <Card
+                        key={tier}
+                        className={`${index === 1 ? "border-blue-500 shadow-lg scale-105" : "border-gray-200"}`}
+                      >
                         <CardHeader className="pb-6">
                           <CardTitle className="capitalize flex items-center gap-3 text-gray-800 text-2xl font-semibold">
                             {tier}
@@ -1113,7 +1250,9 @@ toast.error("Please fix the errors: Some required fields need your attention")
                           </div>
 
                           <div className="space-y-4">
-                            <Label className="text-gray-800 font-semibold text-lg block">Max Input Footage (minutes)</Label>
+                            <Label className="text-gray-800 font-semibold text-lg block">
+                              Max Input Footage (minutes)
+                            </Label>
                             <HoverTooltip
                               content={{
                                 title: "Raw Footage Limit",
@@ -1157,7 +1296,10 @@ toast.error("Please fix the errors: Some required fields need your attention")
                                     }}
                                     className="h-6 w-6"
                                   />
-                                  <Label htmlFor={`${tier}-${feature.id}`} className="text-base text-gray-700 font-medium">
+                                  <Label
+                                    htmlFor={`${tier}-${feature.id}`}
+                                    className="text-base text-gray-700 font-medium"
+                                  >
                                     {feature.label}
                                   </Label>
                                 </div>
@@ -1182,7 +1324,6 @@ toast.error("Please fix the errors: Some required fields need your attention")
                                 Rush Delivery Available
                               </Label>
                             </div>
-
                             {formData[`${tier}RushDelivery`] && (
                               <div className="space-y-6 ml-10">
                                 <div className="space-y-3">
@@ -1247,7 +1388,6 @@ toast.error("Please fix the errors: Some required fields need your attention")
                                   {service.label}
                                 </Label>
                               </div>
-
                               {isSelected && (
                                 <div className="ml-10 grid grid-cols-2 gap-4">
                                   <div className="space-y-3">
@@ -1291,7 +1431,7 @@ toast.error("Please fix the errors: Some required fields need your attention")
             </TabsContent>
 
             {/* Portfolio Tab */}
-             <TabsContent value="portfolio" className="space-y-8">
+            <TabsContent value="portfolio" className="space-y-8">
               <Card className="border-0 shadow-xl bg-white/90 backdrop-blur">
                 <CardHeader className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-t-lg p-8">
                   <CardTitle className="flex items-center gap-3 text-gray-800 text-3xl font-semibold">
@@ -1305,136 +1445,186 @@ toast.error("Please fix the errors: Some required fields need your attention")
                 <CardContent className="p-10">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     {/* Left Column */}
-                   <div className="space-y-6">
-  <Label className="text-gray-800 font-semibold text-xl block">Upload Files</Label>
-  <p className="text-gray-600 text-base">
-    Please upload your cover image, gallery images, and a video sample. 
-    <span className="text-red-500 font-semibold ml-1">
-      You must hit the upload button before proceeding further.
-    </span>
-  </p>
+                    <div className="space-y-6">
+                      <Label className="text-gray-800 font-semibold text-xl block">Upload Files</Label>
+                      <p className="text-gray-600 text-base">
+                        Please upload your cover image, gallery images, and a video sample.
+                        <span className="text-red-500 font-semibold ml-1">
+                          You must hit the upload button before proceeding further.
+                        </span>
+                      </p>
 
-  {/* Cover Image */}
-  <div
-    className={cn(
-      "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
-      formErrors.coverImage && "border-red-500",
-    )}
-  >
-    <Label htmlFor="cover-upload" className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold">
-      Click to upload Cover Image
-    </Label>
-    <Input
-      id="cover-upload"
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={handleCoverChange}
-    />
-    <p className="text-sm text-gray-500 mt-2">PNG, JPG up to 5MB</p>
-  </div>
-  {coverFile && (
-    <div className="flex items-center gap-4 border border-gray-200 rounded p-3">
-      <FileImage className="h-6 w-6 text-gray-400" />
-      <span className="text-gray-700">{coverFile.name}</span>
-    </div>
-  )}
-  {formErrors.coverImage && <p className="text-red-500 text-sm">{formErrors.coverImage}</p>}
+                      {/* Show existing cover image if editing */}
+                      {uploadedUrls.coverImageUrl && (
+                        <div className="mb-4">
+                          <Label className="text-gray-700 font-medium block mb-2">Current Cover Image</Label>
+                          <img
+                            src={uploadedUrls.coverImageUrl || "/placeholder.svg"}
+                            alt="Current cover"
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
 
-  {/* Gallery Images */}
-  <div
-    className={cn(
-      "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
-      formErrors.gallery && "border-red-500",
-    )}
-  >
-    <Label htmlFor="gallery-upload" className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold">
-      Click to upload Gallery Images
-    </Label>
-    <Input
-      id="gallery-upload"
-      type="file"
-      accept="image/*"
-      multiple
-      className="hidden"
-      onChange={handleGalleryChange}
-    />
-    <p className="text-sm text-gray-500 mt-2">Upload multiple images, up to 10MB each</p>
-  </div>
-  {galleryFiles.length > 0 && (
-    <div className="flex flex-wrap gap-3 mt-2">
-      {galleryFiles.map((file, idx) => (
-        <div key={idx} className="flex items-center gap-2 border border-gray-200 rounded p-2">
-          <FileImage className="h-6 w-6 text-gray-400" />
-          <span className="text-gray-700 text-sm">{file.name}</span>
-        </div>
-      ))}
-    </div>
-  )}
-  {formErrors.gallery && <p className="text-red-500 text-sm">{formErrors.gallery}</p>}
+                      {/* Cover Image */}
+                      <div
+                        className={cn(
+                          "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
+                          formErrors.coverImage && "border-red-500",
+                        )}
+                      >
+                        <Label
+                          htmlFor="cover-upload"
+                          className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold"
+                        >
+                          Click to upload Cover Image
+                        </Label>
+                        <Input
+                          id="cover-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleCoverChange}
+                        />
+                        <p className="text-sm text-gray-500 mt-2">PNG, JPG up to 5MB</p>
+                      </div>
 
-  {/* Video Sample */}
-  <div
-    className={cn(
-      "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
-      formErrors.video && "border-red-500",
-    )}
-  >
-    <Label htmlFor="video-upload" className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold">
-      Click to upload Video Sample
-    </Label>
-    <Input
-      id="video-upload"
-      type="file"
-      accept="video/*"
-      className="hidden"
-      onChange={handleVideoChange}
-    />
-    <p className="text-sm text-gray-500 mt-2">MP4, MOV up to 100MB</p>
-  </div>
-  {videoFile && (
-    <div className="flex items-center gap-4 border border-gray-200 rounded p-3">
-      <Video className="h-8 w-8 text-gray-400" />
-      <span className="text-gray-700">{videoFile.name}</span>
-    </div>
-  )}
-  {formErrors.video && <p className="text-red-500 text-sm">{formErrors.video}</p>}
+                      {coverFile && (
+                        <div className="flex items-center gap-4 border border-gray-200 rounded p-3">
+                          <FileImage className="h-6 w-6 text-gray-400" />
+                          <span className="text-gray-700">{coverFile.name}</span>
+                        </div>
+                      )}
+                      {formErrors.coverImage && <p className="text-red-500 text-sm">{formErrors.coverImage}</p>}
 
-  {/* Upload Button */}
-  {/* Upload Buttons */}
-<div className="flex flex-col sm:flex-row gap-4 justify-end mt-4">
-  <Button
-    type="button"
-    onClick={() => handleCoverUpload(coverFile)}
-    className="bg-blue-600 hover:bg-blue-500 text-white text-base px-5 py-2 rounded-lg"
-  >
-    Upload Cover Image
-  </Button>
+                      {/* Show existing gallery images if editing */}
+                      {uploadedUrls.galleryUrls && uploadedUrls.galleryUrls.length > 0 && (
+                        <div className="mb-4">
+                          <Label className="text-gray-700 font-medium block mb-2">Current Gallery Images</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {uploadedUrls.galleryUrls.map((url, index) => (
+                              <img
+                                key={index}
+                                src={url || "/placeholder.svg"}
+                                alt={`Gallery ${index + 1}`}
+                                className="w-full h-24 object-cover rounded border"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-  <Button
-    type="button"
-    onClick={() => handleGalleryUpload(galleryFiles)}
-    className="bg-green-600 hover:bg-green-500 text-white text-base px-5 py-2 rounded-lg"
-  >
-    Upload Gallery Images
-  </Button>
+                      {/* Gallery Images */}
+                      <div
+                        className={cn(
+                          "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
+                          formErrors.gallery && "border-red-500",
+                        )}
+                      >
+                        <Label
+                          htmlFor="gallery-upload"
+                          className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold"
+                        >
+                          Click to upload Gallery Images
+                        </Label>
+                        <Input
+                          id="gallery-upload"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleGalleryChange}
+                        />
+                        <p className="text-sm text-gray-500 mt-2">Upload multiple images, up to 10MB each</p>
+                      </div>
 
-  <Button
-    type="button"
-    onClick={() => handleVideoUpload(videoFile)}
-    className="bg-purple-600 hover:bg-purple-500 text-white text-base px-5 py-2 rounded-lg"
-  >
-    Upload Video Sample
-  </Button>
-</div>
+                      {galleryFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-3 mt-2">
+                          {galleryFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center gap-2 border border-gray-200 rounded p-2">
+                              <FileImage className="h-6 w-6 text-gray-400" />
+                              <span className="text-gray-700 text-sm">{file.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {formErrors.gallery && <p className="text-red-500 text-sm">{formErrors.gallery}</p>}
 
-</div>
+                      {/* Show existing video if editing */}
+                      {uploadedUrls.videoUrl && (
+                        <div className="mb-4">
+                          <Label className="text-gray-700 font-medium block mb-2">Current Video Sample</Label>
+                          <video
+                            src={uploadedUrls.videoUrl}
+                            controls
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
 
+                      {/* Video Sample */}
+                      <div
+                        className={cn(
+                          "border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors",
+                          formErrors.video && "border-red-500",
+                        )}
+                      >
+                        <Label
+                          htmlFor="video-upload"
+                          className="cursor-pointer text-blue-600 hover:text-blue-500 font-semibold"
+                        >
+                          Click to upload Video Sample
+                        </Label>
+                        <Input
+                          id="video-upload"
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={handleVideoChange}
+                        />
+                        <p className="text-sm text-gray-500 mt-2">MP4, MOV up to 100MB</p>
+                      </div>
+
+                      {videoFile && (
+                        <div className="flex items-center gap-4 border border-gray-200 rounded p-3">
+                          <Video className="h-8 w-8 text-gray-400" />
+                          <span className="text-gray-700">{videoFile.name}</span>
+                        </div>
+                      )}
+                      {formErrors.video && <p className="text-red-500 text-sm">{formErrors.video}</p>}
+
+                      {/* Upload Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-4 justify-end mt-4">
+                        <Button
+                          type="button"
+                          onClick={() => handleCoverUpload(coverFile)}
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-base px-5 py-2 rounded-lg"
+                        >
+                          Upload Cover Image
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleGalleryUpload(galleryFiles)}
+                          className="bg-green-600 hover:bg-green-500 text-white text-base px-5 py-2 rounded-lg"
+                        >
+                          Upload Gallery Images
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => handleVideoUpload(videoFile)}
+                          className="bg-purple-600 hover:bg-purple-500 text-white text-base px-5 py-2 rounded-lg"
+                        >
+                          Upload Video Sample
+                        </Button>
+                      </div>
+                    </div>
 
                     {/* Right Column */}
                     <div className="space-y-8">
                       <div className="space-y-6">
-                        <Label className="text-gray-800 font-semibold text-xl block">Portfolio Website (Optional)</Label>
+                        <Label className="text-gray-800 font-semibold text-xl block">
+                          Portfolio Website (Optional)
+                        </Label>
                         <p className="text-gray-600 text-base">
                           Add a link to your portfolio website, YouTube channel, or Vimeo profile to showcase more work.
                         </p>
@@ -1478,7 +1668,9 @@ toast.error("Please fix the errors: Some required fields need your attention")
                           />
                         </HoverTooltip>
                         <div className="flex justify-end mt-3">
-                          <span className="text-sm text-gray-400 font-medium">{formData.portfolioDescription.length}/500</span>
+                          <span className="text-sm text-gray-400 font-medium">
+                            {formData.portfolioDescription.length}/500
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1486,9 +1678,6 @@ toast.error("Please fix the errors: Some required fields need your attention")
                 </CardContent>
               </Card>
             </TabsContent>
-          
-
-
 
             {/* Requirements Tab */}
             <TabsContent value="requirements" className="space-y-8">
@@ -1508,12 +1697,20 @@ toast.error("Please fix the errors: Some required fields need your attention")
                     <div className="space-y-8">
                       <div className="flex flex-col gap-6 justify-start items-start">
                         <div>
-                          <Label className="text-gray-800 font-semibold text-xl block mb-2">What should buyers provide? *</Label>
+                          <Label className="text-gray-800 font-semibold text-xl block mb-2">
+                            What should buyers provide? *
+                          </Label>
                           <p className="text-gray-600 text-base">
                             List all the materials and information you need from buyers to complete their project.
                           </p>
                         </div>
-                        <Button type="button" variant="outline" size="lg" onClick={addBuyerRequirement} className="h-12 px-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          onClick={addBuyerRequirement}
+                          className="h-12 px-6 bg-transparent"
+                        >
                           <Plus className="h-5 w-5 mr-2" />
                           Add Requirement
                         </Button>
@@ -1563,12 +1760,20 @@ toast.error("Please fix the errors: Some required fields need your attention")
                     <div className="space-y-8">
                       <div className="flex flex-col gap-6 justify-start items-start">
                         <div>
-                          <Label className="text-gray-800 font-semibold text-xl block mb-2">Questions for Buyers *</Label>
+                          <Label className="text-gray-800 font-semibold text-xl block mb-2">
+                            Questions for Buyers *
+                          </Label>
                           <p className="text-gray-600 text-base">
                             Ask questions to better understand the buyer's needs and project requirements.
                           </p>
                         </div>
-                        <Button type="button" variant="outline" size="lg" onClick={addBuyerQuestion} className="h-12 px-6">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="lg"
+                          onClick={addBuyerQuestion}
+                          className="h-12 px-6 bg-transparent"
+                        >
                           <Plus className="h-5 w-5 mr-2" />
                           Add Question
                         </Button>
@@ -1614,19 +1819,18 @@ toast.error("Please fix the errors: Some required fields need your attention")
             <Button
               type="button"
               variant="outline"
-              className="text-gray-600 h-14 px-8 text-lg font-medium border-2"
+              className="text-gray-600 h-14 px-8 text-lg font-medium border-2 bg-transparent"
               onClick={handleBack}
               disabled={isFirstStep}
             >
               Back
             </Button>
-
             <Button
               type="button"
               onClick={handleNext}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-10 h-14 text-lg font-semibold shadow-lg"
             >
-              {isLastStep ? "Complete Gig" : "Save & Continue"}
+              {isLastStep ? (gigId ? "Update Gig" : "Complete Gig") : "Save & Continue"}
             </Button>
           </div>
 

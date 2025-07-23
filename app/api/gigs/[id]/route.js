@@ -42,60 +42,165 @@ export async function GET(req, { params }) {
   }
 }
 
-// /app/api/gig/[id]/route.js (for PATCH - update specific gig)
-export async function PATCH(req, { params }) {
+// // /app/api/gig/[id]/route.js (for PATCH - update specific gig)
+// export async function PATCH(req, { params }) {
+//   await connectToDB();
+
+//   try {
+//     const authResult = await authenticateUser(req);
+//     const user = authResult.user;
+
+//     if (!user) {
+//       return NextResponse.json(
+//         { success: false, message: 'Unauthorized user' },
+//         { status: 401 }
+//       );
+//     }
+
+//     const gigId = params.id;
+//     const body = await req.json();
+
+//     // Fix deliveryTime mapping safely
+//     const deliveryTimeMap = { "1-week": 7, "3-days": 3, "2-days": 2 };
+
+//     if (Array.isArray(body.packages)) {
+//       body.packages = body.packages.map(pkg => ({
+//         ...pkg,
+//         deliveryTime: deliveryTimeMap[pkg.deliveryTime] || Number(pkg.deliveryTime) || 0
+//       }));
+//     }
+
+//     // ✅ use $set to avoid replacing entire document
+//     const updatedGig = await Gigs.findByIdAndUpdate(
+//       gigId,
+//       { $set: body },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedGig) {
+//       return NextResponse.json(
+//         { success: false, message: 'Gig not found' },
+//         { status: 404 }
+//       );
+//     }
+
+//     return NextResponse.json({ success: true, gig: updatedGig }, { status: 200 });
+
+//   } catch (err) {
+//     console.error("Gig update error:", err);
+//     return NextResponse.json(
+//       { success: false, message: 'Failed to update gig', error: err.message },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+//  this is the new route to update the gigs
+
+import { NextResponse } from 'next/server';
+import Gigs from '@/models/Gigs';
+import { connectToDB } from '@/lib/mongoose';
+import { authenticateUser } from '@/lib/auth';
+
+export async function PATCH(req, context) {
+  const { params } = await context;
+  const gigId = params.id;
+
+  console.log("[Backend] PATCH /api/user/gigs/[id] - Starting request for gig:", gigId);
+
   await connectToDB();
+  console.log("[Backend] Connected to database");
+
+  const authResult = await authenticateUser(req);
+  if (authResult instanceof Response) {
+    console.log("[Backend] Authentication failed");
+    return authResult;
+  }
+
+  const { user } = authResult;
+  console.log("[Backend] Authenticated user:", user._id);
+
+  // Only sellers can update gigs
+  if (!user.isSeller) {
+    return NextResponse.json({
+      success: false,
+      message: "Access denied. User is not a seller."
+    }, { status: 403 });
+  }
 
   try {
-    const authResult = await authenticateUser(req);
-    const user = authResult.user;
+    const updateData = await req.json();
+    console.log("[Backend] Update data received:", Object.keys(updateData));
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized user' },
-        { status: 401 }
-      );
-    }
+    // Handle packages
+    if (updateData.packages) {
+      // Ensure it's an array
+      if (!Array.isArray(updateData.packages)) {
+        updateData.packages = [updateData.packages];
+      }
 
-    const gigId = params.id;
-    const body = await req.json();
-
-    // Fix deliveryTime mapping safely
-    const deliveryTimeMap = { "1-week": 7, "3-days": 3, "2-days": 2 };
-
-    if (Array.isArray(body.packages)) {
-      body.packages = body.packages.map(pkg => ({
-        ...pkg,
-        deliveryTime: deliveryTimeMap[pkg.deliveryTime] || Number(pkg.deliveryTime) || 0
+      // Normalize packages
+      updateData.packages = updateData.packages.map(pkg => ({
+        name: pkg.name,
+        price: Number(pkg.price),
+        deliveryTime: Number(pkg.deliveryTime), // Assuming frontend sends numeric days
+        revisions: pkg.revisions === "unlimited" ? "unlimited" : parseInt(pkg.revisions) || 1,
+        features: Array.isArray(pkg.features) ? pkg.features : [],
+        rushDelivery: Boolean(pkg.rushDelivery),
+        rushTime: pkg.rushTime || '',
+        rushPrice: Number(pkg.rushPrice),
+        inputLength: String(pkg.inputLength),
+        outputLength: String(pkg.outputLength)
       }));
     }
 
-    // ✅ use $set to avoid replacing entire document
-    const updatedGig = await Gigs.findByIdAndUpdate(
-      gigId,
-      { $set: body },
+    // Handle addOns if needed (optional)
+    if (updateData.addOns) {
+      if (!Array.isArray(updateData.addOns)) {
+        updateData.addOns = [updateData.addOns];
+      }
+
+      updateData.addOns = updateData.addOns.map(addOn => ({
+        id: addOn.id,
+        name: addOn.name,
+        price: Number(addOn.price),
+        deliveryTime: addOn.deliveryTime || ''
+      }));
+    }
+
+    // Timestamp
+    updateData.lastModified = new Date();
+
+    const updatedGig = await Gigs.findOneAndUpdate(
+      { _id: gigId, seller: user._id },
+      { $set: updateData },
       { new: true, runValidators: true }
     );
 
     if (!updatedGig) {
-      return NextResponse.json(
-        { success: false, message: 'Gig not found' },
-        { status: 404 }
-      );
+      console.log("[Backend] Gig not found or access denied");
+      return NextResponse.json({
+        success: false,
+        message: "Gig not found or access denied"
+      }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, gig: updatedGig }, { status: 200 });
+    console.log("[Backend] Gig updated successfully");
+    return NextResponse.json({
+      success: true,
+      message: "Gig updated successfully",
+      gig: updatedGig
+    });
 
-  } catch (err) {
-    console.error("Gig update error:", err);
-    return NextResponse.json(
-      { success: false, message: 'Failed to update gig', error: err.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("[Backend] Error updating gig:", error.message);
+    return NextResponse.json({
+      success: false,
+      message: "Failed to update gig",
+      error: error.message
+    }, { status: 500 });
   }
 }
-
-
 
 
 

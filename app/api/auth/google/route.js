@@ -72,7 +72,7 @@ export async function GET(req) {
         `https://www.googleapis.com/oauth2/v2/userinfo`,
         { headers: { Authorization: `Bearer ${access_token}` } }
       );
-      console.log("✅ [OAuth] Google profile fetched");
+      console.log("✅ [OAuth] Google profile fetched" , profileRes);
     } catch (profileErr) {
       console.error(
         "❌ [OAuth] Failed to fetch Google profile:",
@@ -84,7 +84,7 @@ export async function GET(req) {
       );
     }
 
-    const { email, name, id } = profileRes.data;
+    const { email, name, id , picture } = profileRes.data;
     console.log("👤 [OAuth] User info:", { email, name, id });
 
     if (!email) {
@@ -103,10 +103,14 @@ export async function GET(req) {
         user = await User.create({
           email,
           name,
+          image:picture,
           googleId: id,
+          provider:"google",
           role: "buyer",
+          isbuyer:true,
+          isSeller:false,
         });
-        console.log("✅ [OAuth] New user created");
+        console.log("✅ [OAuth] New user created",user);
       } else {
         console.log("✅ [OAuth] User already exists");
       }

@@ -8,7 +8,8 @@ const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [userLoading, setUserLoading] = useState(true);
+  
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -18,13 +19,13 @@ export const UserProvider = ({ children }) => {
         setUserData(res.data.user);
       } catch (error) {
         console.error("Error fetching user:", error);
-        setUser(null);
+        setUserData(null);
       } finally {
-        setLoading(false);
+        setUserLoading(false);
       }
     };
 
-    fetchUser(); // ✅ this was missing in your original code
+     fetchUser(); // ✅ this was missing in your original code
   }, []);
 
   const switchRole = async (newRole) => {
@@ -37,10 +38,12 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ userData, setUserData, switchRole, loading }}>
+    <UserContext.Provider value={{ userData, setUserData, switchRole, userLoading }}>
       {children}
     </UserContext.Provider>
   );
 };
+
+
 
 export const useUserContext = () => useContext(UserContext);

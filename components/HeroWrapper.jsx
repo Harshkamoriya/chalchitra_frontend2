@@ -95,7 +95,6 @@ const HeroWrapper = memo(function HeroWrapper() {
     try {
       if (!user) {
         showAlertMessage("Please log in to start selling services", "warning")
-        setTimeout(() => router.push("/login"), 2000)
         return
       }
 
@@ -113,7 +112,7 @@ const HeroWrapper = memo(function HeroWrapper() {
       }
 
       showAlertMessage("Redirecting to create your first gig...", "success")
-      setTimeout(() => router.push("/seller/manage/gigs/creategigs"), 1000)
+      setTimeout(() => router.push("/seller/manage/gigs/create_gigs"), 1000)
     } catch (error) {
       showAlertMessage("Something went wrong. Please try again.", "error")
     } finally {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Dialog,
   DialogContent,
@@ -47,11 +46,13 @@ import {
   XCircle,
   UserCheck,
   AlertCircle,
-  Loader2
+  Loader2,
+  X,
 } from "lucide-react"
 import api from "@/lib/axios"
 import { toast } from "react-hot-toast"
 import { useAuth } from "@/app/(nav2)/context/AuthContext"
+import { useUserContext } from "@/app/(nav2)/context/UserContext"
 
 const statusConfig = {
   live: { label: "Published", color: "bg-green-100 text-green-800", icon: CheckCircle },
@@ -64,8 +65,9 @@ const statusConfig = {
 
 export default function GigsPage() {
   const router = useRouter()
-  const { user, activeRole } = useAuth()
-  
+  const { user } = useAuth()
+  const activeRole = localStorage.getItem("activeRole")
+
   const [activeTab, setActiveTab] = useState("live")
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("recent")
@@ -75,84 +77,110 @@ export default function GigsPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const { userData, userLoading } = useUserContext()
+
   const [stats, setStats] = useState({
     live: 0,
     draft: 0,
     pending: 0,
     requires_modification: 0,
     paused: 0,
-    denied: 0
+    denied: 0,
   })
+
+  // Debounced search function
+  const debounce = useCallback((func, delay) => {
+    let timeoutId
+    return (...args) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => func.apply(null, args), delay)
+    }
+  }, [])
 
   // Check if user can access this page
   useEffect(() => {
-    console.log("[Frontend] Checking user access - activeRole:", activeRole, "isSeller:", user?.isSeller)
-    
+    console.log("[Frontend] Checking user access - activeRole:", activeRole, "userData:", userData)
+
+    if (userLoading) {
+      console.log("[Frontend] User data still loading...")
+      return
+    }
+
     if (!user) {
       console.log("[Frontend] No user found, redirecting to login")
-      // router.push("/login")
       return
     }
 
-    // if (activeRole !== "seller") {
-    //   console.log("[Frontend] User is not in seller mode")
-    //   toast.error("Please switch to seller mode to access gigs")
-    //   return
-    // }
+    if (!userData) {
+      console.log("[Frontend] No userData found")
+      return
+    }
 
-    if (!user.isSeller) {
+    if (!userData.isSeller) {
       console.log("[Frontend] User is not a seller")
       toast.error("You need to become a seller first")
-      // router.push("/become-seller")
       return
     }
-  }, [user, activeRole, router])
+  }, [user, activeRole, userData, userLoading])
 
-  useEffect(() => {
-    if (user && activeRole === "seller" && user.isSeller) {
-      console.log(activeRole  , "activeRole")
-      fetchGigs()
-      fetchStats()
-    }
-  }, [activeTab, page, user, activeRole])
+  // Update fetchGigs to use userData properly
+  const fetchGigs = useCallback(
+    async (searchTerm = searchQuery) => {
+      if (!user || !userData?.isSeller) return
 
-  const fetchGigs = async () => {
-    try {
-      console.log("[Frontend] Fetching gigs with params:", { status: activeTab, page })
-      setLoading(true)
-      
-      const res = await api.get("/api/user/gigs", {
-        params: {
+      try {
+        console.log("[Frontend] Fetching gigs with params:", {
+          status: activeTab,
+          page,
+          search: searchTerm,
+          sortBy,
+        })
+
+        setLoading(true)
+
+        const params = {
           status: activeTab,
           page,
           limit: 10,
-          search: searchQuery
+          sort: sortBy,
         }
-      })
-      
-      console.log("[Frontend] Gigs response:", res.data)
-      
-      if (res.data.success) {
-        setGigs(res.data.gigs)
-        setTotalPages(res.data.pagination.pages)
-      } else {
-        setGigs([])
-        toast.error("Failed to fetch gigs")
-      }
-    } catch (error) {
-      console.error("[Frontend] Error fetching gigs:", error)
-      setGigs([])
-      toast.error("Could not load gigs")
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  const fetchStats = async () => {
+        if (searchTerm && searchTerm.trim()) {
+          params.search = searchTerm.trim()
+        }
+
+        const res = await api.get("/api/user/gigs", { params })
+
+        console.log("[Frontend] Gigs response:", res.data)
+
+        if (res.data.success) {
+          setGigs(res.data.gigs)
+          setTotalPages(res.data.pagination.pages)
+        } else {
+          setGigs([])
+          toast.error("Failed to fetch gigs")
+        }
+      } catch (error) {
+        console.error("[Frontend] Error fetching gigs:", error)
+        setGigs([])
+        toast.error("Could not load gigs")
+      } finally {
+        setLoading(false)
+        setInitialLoading(false)
+      }
+    },
+    [activeTab, page, sortBy, user, userData],
+  )
+
+  // Update fetchStats to use userData properly
+  const fetchStats = useCallback(async () => {
+    if (!user || !userData?.isSeller) return
+
     try {
       console.log("[Frontend] Fetching gig stats")
       const res = await api.get("/api/user/gigs/stats")
-      
+
       if (res.data.success) {
         setStats(res.data.stats)
         console.log("[Frontend] Stats received:", res.data.stats)
@@ -160,16 +188,43 @@ export default function GigsPage() {
     } catch (error) {
       console.error("[Frontend] Error fetching stats:", error)
     }
-  }
+  }, [user, userData])
+
+  // Debounced search
+  const debouncedFetchGigs = useCallback(
+    debounce((searchTerm) => {
+      setPage(1) // Reset to first page when searching
+      fetchGigs(searchTerm)
+    }, 500),
+    [fetchGigs],
+  )
+
+  // Update the initial load effect
+  useEffect(() => {
+    if (user && userData?.isSeller && !userLoading) {
+      fetchGigs()
+      fetchStats()
+    }
+  }, [activeTab, page, sortBy, user, userData, userLoading, fetchGigs, fetchStats])
+
+  // Handle search input changes
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setPage(1)
+      fetchGigs("")
+    } else {
+      debouncedFetchGigs(searchQuery)
+    }
+  }, [searchQuery, debouncedFetchGigs, fetchGigs])
 
   const handleStatusChange = async (gigId, newStatus) => {
     try {
       console.log("[Frontend] Changing gig status:", gigId, "to", newStatus)
-      
+
       const res = await api.patch(`/api/user/gigs/${gigId}/status`, {
-        status: newStatus
+        status: newStatus,
       })
-      
+
       if (res.data.success) {
         toast.success(`Gig ${newStatus === "paused" ? "paused" : "activated"} successfully`)
         fetchGigs()
@@ -190,9 +245,9 @@ export default function GigsPage() {
 
     try {
       console.log("[Frontend] Deleting gig:", gigId)
-      
+
       const res = await api.delete(`/api/user/gigs/${gigId}`)
-      
+
       if (res.data.success) {
         toast.success("Gig deleted successfully")
         fetchGigs()
@@ -209,9 +264,9 @@ export default function GigsPage() {
   const handleDuplicateGig = async (gigId) => {
     try {
       console.log("[Frontend] Duplicating gig:", gigId)
-      
+
       const res = await api.post(`/api/user/gigs/${gigId}/duplicate`)
-      
+
       if (res.data.success) {
         toast.success("Gig duplicated successfully")
         fetchGigs()
@@ -239,7 +294,23 @@ export default function GigsPage() {
   }
 
   const formatRevisions = (revisions) => {
-    return revisions === "unlimited" ? "Unlimited" : `${revisions} revision${revisions !== 1 ? 's' : ''}`
+    return revisions === "unlimited" ? "Unlimited" : `${revisions} revision${revisions !== 1 ? "s" : ""}`
+  }
+
+  const clearSearch = () => {
+    setSearchQuery("")
+  }
+
+  // Update the loading condition at the beginning of the component
+  if (userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading user info...</p>
+        </div>
+      </div>
+    )
   }
 
   // Show access control messages
@@ -254,9 +325,20 @@ export default function GigsPage() {
     )
   }
 
-  if (activeRole !== "seller") {
+  if (!userData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading user data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (activeRole !== "seller") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md mx-auto text-center p-8">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <UserCheck className="w-8 h-8 text-blue-600" />
@@ -271,67 +353,81 @@ export default function GigsPage() {
     )
   }
 
-  // if (!user.isSeller) {
-  //   return (
-  //     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-  //       <div className="max-w-md mx-auto text-center p-8">
-  //         <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-  //           <AlertCircle className="w-8 h-8 text-orange-600" />
-  //         </div>
-  //         <h1 className="text-2xl font-bold text-gray-900 mb-4">Become a Seller</h1>
-  //         <p className="text-gray-600 mb-6">You need to complete seller registration to create and manage gigs</p>
-  //         <Button onClick={() => router.push("/become-seller")} className="w-full">
-  //           Become a Seller
-  //         </Button>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  if (!userData.isSeller) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md mx-auto text-center p-8">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-orange-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Become a Seller</h1>
+          <p className="text-gray-600 mb-6">You need to complete seller registration to create and manage gigs</p>
+          <Button onClick={() => router.push("/become-seller")} className="w-full">
+            Become a Seller
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading your gigs...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-8">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Manage Gigs</h1>
-            <p className="text-gray-600">Create and manage your services to attract clients</p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Custom Orders Toggle */}
-            <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
-              <Switch
-                checked={acceptingCustomOrders}
-                onCheckedChange={setAcceptingCustomOrders}
-              />
-              <span className="text-sm font-medium">Accepting Custom Orders</span>
+        <div className="flex flex-col space-y-4 mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Manage Gigs</h1>
+              <p className="text-gray-600 text-sm md:text-base">Create and manage your services to attract clients</p>
             </div>
 
-            {/* Create Gig Button */}
-            <Link href="/seller/manage/gigs/create-gig">
-              <Button className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700">
-                <Plus className="h-4 w-4" />
-                Create New Gig
-              </Button>
-            </Link>
+            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Custom Orders Toggle */}
+              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                <Switch checked={acceptingCustomOrders} onCheckedChange={setAcceptingCustomOrders} />
+                <span className="text-sm font-medium">Accepting Custom Orders</span>
+              </div>
+
+              {/* Create Gig Button */}
+              <Link href="/seller/manage/gigs/create-gig">
+                <Button className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Create New Gig</span>
+                  <span className="sm:hidden">Create Gig</span>
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        {/* Stats Overview - Responsive Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-6 md:mb-8">
           {Object.entries(statusConfig).map(([status, config]) => {
             const Icon = config.icon
             return (
               <Card key={status} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${config.color.replace('text-', 'bg-').replace('100', '200')}`}>
-                      <Icon className="h-4 w-4" />
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div
+                      className={`p-1.5 md:p-2 rounded-full ${config.color.replace("text-", "bg-").replace("100", "200")}`}
+                    >
+                      <Icon className="h-3 w-3 md:h-4 md:w-4" />
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">{config.label}</p>
-                      <p className="text-xl font-bold">{stats[status] || 0}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs md:text-sm text-gray-600 truncate">{config.label}</p>
+                      <p className="text-lg md:text-xl font-bold">{stats[status] || 0}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -349,16 +445,23 @@ export default function GigsPage() {
                 <Input
                   placeholder="Search gigs by title, category, or tags..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setPage(1)
-                  }}
-                  className="pl-10"
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-10"
                 />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSearch}
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto bg-transparent">
                     <Filter className="h-4 w-4" />
                     Sort By
                   </Button>
@@ -386,26 +489,35 @@ export default function GigsPage() {
           </CardContent>
         </Card>
 
-        {/* Gigs Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); setPage(1) }}>
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
-            {Object.entries(statusConfig).map(([status, config]) => {
-              const Icon = config.icon
-              return (
-                <TabsTrigger
-                  key={status}
-                  value={status}
-                  className="flex items-center gap-1 text-xs md:text-sm"
-                >
-                  <Icon className="h-3 w-3 md:h-4 md:w-4" />
-                  <span className="hidden sm:inline">{config.label}</span>
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {stats[status] || 0}
-                  </Badge>
-                </TabsTrigger>
-              )
-            })}
-          </TabsList>
+        {/* Gigs Tabs - Mobile Responsive */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            setActiveTab(value)
+            setPage(1)
+          }}
+        >
+          <div className="overflow-x-auto mb-6">
+            <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 min-w-max md:min-w-0">
+              {Object.entries(statusConfig).map(([status, config]) => {
+                const Icon = config.icon
+                return (
+                  <TabsTrigger
+                    key={status}
+                    value={status}
+                    className="flex items-center gap-1 text-xs md:text-sm px-2 md:px-4"
+                  >
+                    <Icon className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">{config.label}</span>
+                    <span className="sm:hidden">{config.label.split(" ")[0]}</span>
+                    <Badge variant="secondary" className="ml-1 text-xs">
+                      {stats[status] || 0}
+                    </Badge>
+                  </TabsTrigger>
+                )
+              })}
+            </TabsList>
+          </div>
 
           {Object.keys(statusConfig).map((status) => (
             <TabsContent key={status} value={status}>
@@ -416,8 +528,8 @@ export default function GigsPage() {
                 </div>
               ) : gigs.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Table Header */}
-                  <div className="bg-white rounded-lg border">
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block bg-white rounded-lg border">
                     <div className="grid grid-cols-12 gap-4 p-4 border-b bg-gray-50 font-medium text-sm text-gray-600">
                       <div className="col-span-4">GIG</div>
                       <div className="col-span-2">PERFORMANCE</div>
@@ -426,29 +538,29 @@ export default function GigsPage() {
                       <div className="col-span-2">ACTIONS</div>
                     </div>
 
-                    {/* Table Rows */}
                     {gigs.map((gig) => {
                       const StatusIcon = statusConfig[gig.status]?.icon || Clock
                       const conversionRate = getConversionRate(gig.clicks, gig.orders)
                       const basePrice = gig.packages?.[0]?.price || 0
 
                       return (
-                        <div key={gig._id} className="grid grid-cols-12 gap-4 p-4 border-b hover:bg-gray-50 transition-colors">
+                        <div
+                          key={gig._id}
+                          className="grid grid-cols-12 gap-4 p-4 border-b hover:bg-gray-50 transition-colors"
+                        >
                           {/* Gig Info */}
                           <div className="col-span-4">
                             <div className="flex items-start gap-3">
                               <img
-                                src={gig.media?.coverImage || "/placeholder-gig.jpg"}
+                                src={gig.media?.coverImage || "/placeholder.svg?height=48&width=64&query=gig cover"}
                                 alt={gig.title}
                                 className="w-16 h-12 object-cover rounded border"
                               />
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">
-                                  {gig.title}
-                                </h3>
+                                <h3 className="font-medium text-gray-900 line-clamp-2 mb-1">{gig.title}</h3>
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                   <Badge variant="outline" className="text-xs">
-                                    {gig.category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    {gig.category?.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                                   </Badge>
                                   <span>•</span>
                                   <span>Modified {formatDate(gig.lastModified)}</span>
@@ -484,12 +596,10 @@ export default function GigsPage() {
                             <div className="space-y-1">
                               <p className="text-lg font-bold text-gray-900">${basePrice}</p>
                               <p className="text-xs text-gray-500">
-                                {gig.packages?.length || 0} package{gig.packages?.length !== 1 ? 's' : ''}
+                                {gig.packages?.length || 0} package{gig.packages?.length !== 1 ? "s" : ""}
                               </p>
                               {gig.ordersInQueue > 0 && (
-                                <p className="text-xs text-orange-600">
-                                  {gig.ordersInQueue} in queue
-                                </p>
+                                <p className="text-xs text-orange-600">{gig.ordersInQueue} in queue</p>
                               )}
                             </div>
                           </div>
@@ -515,15 +625,12 @@ export default function GigsPage() {
                             <div className="flex items-center gap-2">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setSelectedGig(gig)}
-                                  >
+                                  <Button variant="outline" size="sm" onClick={() => setSelectedGig(gig)}>
                                     <Eye className="h-3 w-3 mr-1" />
                                     View
                                   </Button>
                                 </DialogTrigger>
+                                <GigDetailsModal gig={selectedGig} />
                               </Dialog>
 
                               <DropdownMenu>
@@ -534,7 +641,7 @@ export default function GigsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem
-                                    onClick={() => router.push(`/seller/manage/gigs/create-gig?edit=${gig._id}`)}
+                                    onClick={() => router.push(`/seller/manage/gigs/create_gigs?gigId=${gig._id}`)}
                                   >
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Gig
@@ -549,10 +656,9 @@ export default function GigsPage() {
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
-                                    onClick={() => handleStatusChange(
-                                      gig._id, 
-                                      gig.status === "paused" ? "live" : "paused"
-                                    )}
+                                    onClick={() =>
+                                      handleStatusChange(gig._id, gig.status === "paused" ? "live" : "paused")
+                                    }
                                   >
                                     {gig.status === "paused" ? (
                                       <>
@@ -567,10 +673,7 @@ export default function GigsPage() {
                                     )}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    className="text-red-600"
-                                    onClick={() => handleDeleteGig(gig._id)}
-                                  >
+                                  <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteGig(gig._id)}>
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete
                                   </DropdownMenuItem>
@@ -583,19 +686,150 @@ export default function GigsPage() {
                     })}
                   </div>
 
+                  {/* Mobile Card View */}
+                  <div className="lg:hidden space-y-4">
+                    {gigs.map((gig) => {
+                      const StatusIcon = statusConfig[gig.status]?.icon || Clock
+                      const conversionRate = getConversionRate(gig.clicks, gig.orders)
+                      const basePrice = gig.packages?.[0]?.price || 0
+
+                      return (
+                        <Card key={gig._id} className="hover:shadow-md transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3 mb-4">
+                              <img
+                                src={gig.media?.coverImage || "/placeholder.svg?height=60&width=80&query=gig cover"}
+                                alt={gig.title}
+                                className="w-20 h-15 object-cover rounded border flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-gray-900 line-clamp-2 mb-2">{gig.title}</h3>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge className={statusConfig[gig.status]?.color}>
+                                    <StatusIcon className="h-3 w-3 mr-1" />
+                                    {statusConfig[gig.status]?.label}
+                                  </Badge>
+                                  <span className="text-lg font-bold text-gray-900">${basePrice}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <Badge variant="outline" className="text-xs">
+                                    {gig.category?.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                                  </Badge>
+                                  <span>•</span>
+                                  <span>{formatDate(gig.lastModified)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Performance Stats */}
+                            <div className="grid grid-cols-4 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                              <div className="text-center">
+                                <p className="text-xs text-gray-500">Views</p>
+                                <p className="font-medium">{gig.impressions?.toLocaleString() || 0}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-gray-500">Clicks</p>
+                                <p className="font-medium">{gig.clicks || 0}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-gray-500">Orders</p>
+                                <p className="font-medium">{gig.orders || 0}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-gray-500">Rate</p>
+                                <p className="font-medium">{conversionRate}%</p>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {gig.rating?.average > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                    <span className="text-xs text-gray-600">
+                                      {gig.rating.average.toFixed(1)} ({gig.rating.count})
+                                    </span>
+                                  </div>
+                                )}
+                                {gig.ordersInQueue > 0 && (
+                                  <span className="text-xs text-orange-600">{gig.ordersInQueue} in queue</span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm" onClick={() => setSelectedGig(gig)}>
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      View
+                                    </Button>
+                                  </DialogTrigger>
+                                  <GigDetailsModal gig={selectedGig} />
+                                </Dialog>
+
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => router.push(`/seller/manage/gigs/create_gigs?gigId=${gig._id}`)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Gig
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicateGig(gig._id)}>
+                                      <Copy className="h-4 w-4 mr-2" />
+                                      Duplicate
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <BarChart3 className="h-4 w-4 mr-2" />
+                                      View Analytics
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleStatusChange(gig._id, gig.status === "paused" ? "live" : "paused")
+                                      }
+                                    >
+                                      {gig.status === "paused" ? (
+                                        <>
+                                          <Play className="h-4 w-4 mr-2" />
+                                          Activate
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Pause className="h-4 w-4 mr-2" />
+                                          Pause
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteGig(gig._id)}>
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
                       <div className="text-sm text-gray-700">
                         Page {page} of {totalPages}
                       </div>
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page === 1}
-                          onClick={() => setPage(page - 1)}
-                        >
+                        <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(page - 1)}>
                           Previous
                         </Button>
                         <Button
@@ -616,11 +850,6 @@ export default function GigsPage() {
             </TabsContent>
           ))}
         </Tabs>
-
-        {/* Gig Details Modal */}
-        <Dialog>
-          <GigDetailsModal gig={selectedGig} />
-        </Dialog>
       </div>
     </div>
   )
@@ -635,15 +864,13 @@ function EmptyState({ status }) {
       <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
         <StatusIcon className="h-8 w-8 text-gray-400" />
       </div>
-      <h3 className="text-xl font-semibold mb-2 text-gray-900">
-        No {statusConfig[status]?.label.toLowerCase()} gigs
-      </h3>
+      <h3 className="text-xl font-semibold mb-2 text-gray-900">No {statusConfig[status]?.label.toLowerCase()} gigs</h3>
       <p className="text-gray-600 mb-6 max-w-md mx-auto">
         {status === "live"
           ? "You don't have any published gigs yet. Create your first gig to start earning!"
           : status === "draft"
-          ? "No draft gigs found. Start creating a new gig to save it as draft."
-          : `No ${statusConfig[status]?.label.toLowerCase()} gigs to display.`}
+            ? "No draft gigs found. Start creating a new gig to save it as draft."
+            : `No ${statusConfig[status]?.label.toLowerCase()} gigs to display.`}
       </p>
       {(status === "live" || status === "draft") && (
         <Link href="/seller/manage/gigs/create-gig">
@@ -662,7 +889,7 @@ function GigDetailsModal({ gig }) {
   if (!gig) return null
 
   const formatRevisions = (revisions) => {
-    return revisions === "unlimited" ? "Unlimited" : `${revisions} revision${revisions !== 1 ? 's' : ''}`
+    return revisions === "unlimited" ? "Unlimited" : `${revisions} revision${revisions !== 1 ? "s" : ""}`
   }
 
   return (
@@ -670,13 +897,11 @@ function GigDetailsModal({ gig }) {
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <span>{gig.title}</span>
-          <Badge className={statusConfig[gig.status]?.color}>
-            {statusConfig[gig.status]?.label}
-          </Badge>
+          <Badge className={statusConfig[gig.status]?.color}>{statusConfig[gig.status]?.label}</Badge>
         </DialogTitle>
         <DialogDescription>Gig ID: {gig._id}</DialogDescription>
       </DialogHeader>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Left Column - Gig Info */}
         <div className="lg:col-span-2 space-y-6">
@@ -690,10 +915,10 @@ function GigDetailsModal({ gig }) {
                 <label className="text-sm font-medium text-gray-600">Description</label>
                 <p className="mt-1">{gig.description}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">Category</label>
-                  <p className="mt-1">{gig.category?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                  <p className="mt-1">{gig.category?.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">Max Duration</label>
@@ -734,11 +959,9 @@ function GigDetailsModal({ gig }) {
                         <p className="text-xs font-medium text-gray-600 mb-1">Features:</p>
                         <ul className="text-xs text-gray-600 space-y-1">
                           {pkg.features.slice(0, 3).map((feature, idx) => (
-                            <li key={idx}>✓ {feature.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</li>
+                            <li key={idx}>✓ {feature.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}</li>
                           ))}
-                          {pkg.features.length > 3 && (
-                            <li>+ {pkg.features.length - 3} more...</li>
-                          )}
+                          {pkg.features.length > 3 && <li>+ {pkg.features.length - 3} more...</li>}
                         </ul>
                       </div>
                     )}
@@ -793,9 +1016,7 @@ function GigDetailsModal({ gig }) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Current Status</span>
-                <Badge className={statusConfig[gig.status]?.color}>
-                  {statusConfig[gig.status]?.label}
-                </Badge>
+                <Badge className={statusConfig[gig.status]?.color}>{statusConfig[gig.status]?.label}</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Orders in Queue</span>
@@ -842,15 +1063,15 @@ function GigDetailsModal({ gig }) {
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Gig
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 View Analytics
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
                 <Copy className="h-4 w-4 mr-2" />
                 Duplicate Gig
               </Button>

@@ -74,6 +74,7 @@ export default function TopNavbar() {
   const pathname = usePathname()
   const { handleSwitch, activeRole } = useAuth()
   const { userData } = useUserContext()
+  console.log(userData , "userdata")
 
   // Mock unread counts - replace with actual data from context
   const unreadNotifications = 3

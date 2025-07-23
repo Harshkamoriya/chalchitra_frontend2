@@ -95,7 +95,8 @@ const uploadFileToCloudinary = async (file) => {
 
 export default function OrdersPage() {
   const router = useRouter();
-  const { user, activeRole } = useAuth();
+  const { user } = useAuth();
+  const activeRole = localStorage.getItem("activeRole")
   const { createNotification } = useSocket();
 
   const [orders, setOrders] = useState([]);

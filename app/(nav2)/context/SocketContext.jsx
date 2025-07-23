@@ -329,8 +329,9 @@ export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
   const [currentConversationId , setCurrentConversationId] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
-  const {activeRole} = useAuth()
   const userId = user?.id;
+  const activeRole  = localStorage.getItem("activeRole")
+  console.log(activeRole , "activeRole")
 
 const currentConversationIdRef = useRef(null);
   useEffect(() => { currentConversationIdRef.current = currentConversationId }, [currentConversationId]);
@@ -472,6 +473,7 @@ useEffect(() => {
 
   const fetchConversations = async () => {
     try {
+      console.log("active role before fetching " , activeRole)
       const res = await api.get(`/api/messages?userId=${userId}&activeRole=${activeRole}`);
       console.log(res ,'res')
       setConversations(res.data.conversations || []);
