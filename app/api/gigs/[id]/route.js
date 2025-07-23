@@ -97,10 +97,7 @@ export async function GET(req, { params }) {
 
 //  this is the new route to update the gigs
 
-import { NextResponse } from 'next/server';
-import Gigs from '@/models/Gigs';
-import { connectToDB } from '@/lib/mongoose';
-import { authenticateUser } from '@/lib/auth';
+
 
 export async function PATCH(req, context) {
   const { params } = await context;
